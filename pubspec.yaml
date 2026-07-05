@@ -1,0 +1,28 @@
+name: garasin
+description: GarasiIn - Marketplace Sewa Garasi Rumah untuk Parkir Mobil.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management & routing
+  get: ^4.6.6
+
+  # Icons
+  iconsax: ^0.0.8
+
+  # Date & currency formatting
+  intl: ^0.19.0
+
+  # Signature pad for digital signature
+  signature: ^5.4.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
