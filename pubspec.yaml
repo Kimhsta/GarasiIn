@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
 
   # State management & routing
+  flutter_test:
+    sdk: flutter
   get: ^4.6.6
 
   # Icons
