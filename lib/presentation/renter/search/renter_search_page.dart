@@ -16,7 +16,6 @@ class RenterSearchPage extends StatefulWidget {
 class _RenterSearchPageState extends State<RenterSearchPage> {
   final _searchCtrl = TextEditingController();
   List<GarageModel> _results = [];
-  bool _hasSearched = false;
 
   @override
   void initState() {
@@ -32,7 +31,6 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
 
   void _onSearch(String query) {
     setState(() {
-      _hasSearched = query.isNotEmpty;
       _results = DummyData.garages
           .where((g) =>
               g.name.toLowerCase().contains(query.toLowerCase()) ||
