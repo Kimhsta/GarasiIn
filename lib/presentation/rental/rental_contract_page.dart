@@ -6,22 +6,48 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
 import '../../core/widgets/app_button.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../data/models/garage_model.dart';
+import '../../data/models/user_model.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
+import '../../data/repositories/user_repository.dart';
 
-class RentalContractPage extends StatelessWidget {
+class RentalContractPage extends StatefulWidget {
   const RentalContractPage({super.key});
 
   @override
+  State<RentalContractPage> createState() => _RentalContractPageState();
+}
+
+class _RentalContractPageState extends State<RentalContractPage> {
+  UserModel? _owner;
+  bool _isLoadingOwner = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwner();
+  }
+
+  Future<void> _loadOwner() async {
+    final args = Get.arguments as Map<String, dynamic>;
+    final garage = args['garage'] as GarageModel;
+    final owner = await UserRepository().getUserById(garage.ownerId);
+    if (mounted) {
+      setState(() {
+        _owner = owner;
+        _isLoadingOwner = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final args = Get.arguments as Map<String, dynamic>?;
-    final GarageModel garage =
-        args?['garage'] as GarageModel? ?? DummyData.garages.first;
-    final DateTime startDate =
-        args?['startDate'] as DateTime? ?? DateTime(2024, 7, 1);
-    final DateTime endDate =
-        args?['endDate'] as DateTime? ?? DateTime(2024, 7, 31);
-    final int total = args?['total'] as int? ?? garage.pricePerMonth;
-    final String note = args?['note'] as String? ?? '';
+    final args = Get.arguments as Map<String, dynamic>;
+    final garage = args['garage'] as GarageModel;
+    final startDate = args['startDate'] as DateTime;
+    final endDate = args['endDate'] as DateTime;
+    final total = args['total'] as int;
+    final note = args['note'] as String? ?? '';
 
     final priceFormat = NumberFormat.currency(
       locale: 'id_ID',
@@ -29,8 +55,14 @@ class RentalContractPage extends StatelessWidget {
       decimalDigits: 0,
     );
     final dateFormat = DateFormat('d MMMM yyyy', 'id_ID');
-    final owner = DummyData.ownerUser;
-    final renter = DummyData.renterUser;
+    final authCtrl = Get.find<AuthController>();
+    final renter = authCtrl.currentUser.value;
+    if (renter == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    final contractNumber =
+        'KTR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -49,7 +81,6 @@ class RentalContractPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
                   Center(
                     child: Column(
                       children: [
@@ -67,25 +98,29 @@ class RentalContractPage extends StatelessWidget {
                         Text('Kontrak Sewa Garasi',
                             style: AppTextStyles.headingMedium),
                         const SizedBox(height: 4),
-                        Text(
-                          'No. KTR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-                          style: AppTextStyles.caption,
-                        ),
+                        Text('No. $contractNumber',
+                            style: AppTextStyles.caption),
                       ],
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  _SectionCard(
-                    title: 'Data Pemilik Garasi',
-                    items: {
-                      'Nama': owner.name,
-                      'Email': owner.email,
-                      'No. HP': owner.phone,
-                    },
-                  ),
-                  const SizedBox(height: 12),
+                  _isLoadingOwner
+                      ? const Center(child: CircularProgressIndicator())
+                      : Column(
+                          children: [
+                            _SectionCard(
+                              title: 'Data Pemilik Garasi',
+                              items: {
+                                'Nama': _owner?.name ?? '-',
+                                'Email': _owner?.email ?? '-',
+                                'No. HP': _owner?.phone ?? '-',
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        ),
 
                   _SectionCard(
                     title: 'Data Penyewa',
@@ -126,7 +161,6 @@ class RentalContractPage extends StatelessWidget {
 
                   const SizedBox(height: 20),
 
-                  // Isi kontrak singkat
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -172,7 +206,6 @@ class RentalContractPage extends StatelessWidget {
             ),
           ),
 
-          // Sticky Button
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: BoxDecoration(
@@ -181,7 +214,16 @@ class RentalContractPage extends StatelessWidget {
             ),
             child: AppButton(
               label: 'Lanjut Tanda Tangan',
-              onTap: () => Get.toNamed(AppRoutes.rentalSignature),
+              onTap: () {
+                Get.toNamed(AppRoutes.rentalSignature, arguments: {
+                  'garage': garage,
+                  'startDate': startDate,
+                  'endDate': endDate,
+                  'total': total,
+                  'note': note.isEmpty ? null : note,
+                  'contractNumber': contractNumber,
+                });
+              },
             ),
           ),
         ],

@@ -7,15 +7,14 @@ import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_status_badge.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../data/models/garage_model.dart';
 
 class GarageDetailPage extends StatelessWidget {
   const GarageDetailPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final GarageModel garage =
-        Get.arguments as GarageModel? ?? DummyData.garages.first;
+    final GarageModel garage = Get.arguments as GarageModel;
 
     final priceFormat = NumberFormat.currency(
       locale: 'id_ID',
@@ -73,7 +72,10 @@ class GarageDetailPage extends StatelessWidget {
                         Positioned(
                           bottom: 12,
                           left: 16,
-                          child: AppStatusBadge(garageStatus: garage.status),
+                          child: AppStatusBadge(
+                            customLabel: garage.isAvailable ? 'Tersedia' : 'Disewa',
+                            customColor: garage.isAvailable ? AppColors.success : AppColors.warning,
+                          ),
                         ),
                       ],
                     ),
@@ -192,10 +194,10 @@ class GarageDetailPage extends StatelessWidget {
             ),
             child: AppButton(
               label: 'Ajukan Sewa',
-              onTap: garage.status == GarageStatus.available
+              onTap: garage.isAvailable
                   ? () => Get.toNamed(AppRoutes.rentalApply, arguments: garage)
                   : null,
-              backgroundColor: garage.status == GarageStatus.available
+              backgroundColor: garage.isAvailable
                   ? AppColors.primary
                   : AppColors.textSecondary,
             ),

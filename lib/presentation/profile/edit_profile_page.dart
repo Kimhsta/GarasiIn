@@ -7,7 +7,9 @@ import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/app_button.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../data/models/user_model.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
+import '../../presentation/profile/controllers/profile_controller.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -27,7 +29,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    final user = Get.arguments as UserModel? ?? DummyData.ownerUser;
+    final user = Get.arguments as UserModel? ??
+        Get.find<AuthController>().currentUser.value;
+    if (user == null) return;
     _nameCtrl = TextEditingController(text: user.name);
     _emailCtrl = TextEditingController(text: user.email);
     _phoneCtrl = TextEditingController(text: user.phone);
@@ -44,16 +48,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void _onSave() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    Get.back();
-    Get.snackbar(
-      'Berhasil',
-      'Profil berhasil diperbarui',
-      backgroundColor: AppColors.success.withValues(alpha: 0.1),
-      colorText: AppColors.success,
-      snackPosition: SnackPosition.BOTTOM,
+    final profileCtrl = Get.find<ProfileController>();
+    final success = await profileCtrl.updateProfile(
+      name: _nameCtrl.text,
+      email: _emailCtrl.text,
+      phone: _phoneCtrl.text,
+      imagePath: _imageFile?.path,
     );
+    setState(() => _isLoading = false);
+    if (success) {
+      Get.back();
+      Get.snackbar(
+        'Berhasil',
+        'Profil berhasil diperbarui',
+        backgroundColor: AppColors.success.withValues(alpha: 0.1),
+        colorText: AppColors.success,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   void _pickImage() {

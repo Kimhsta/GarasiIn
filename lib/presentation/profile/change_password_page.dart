@@ -4,6 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import '../../app/theme/app_colors.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/app_button.dart';
+import '../../presentation/profile/controllers/profile_controller.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -33,16 +34,22 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   void _onSave() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    Get.back();
-    Get.snackbar(
-      'Berhasil',
-      'Password berhasil diubah',
-      backgroundColor: AppColors.success.withValues(alpha: 0.1),
-      colorText: AppColors.success,
-      snackPosition: SnackPosition.BOTTOM,
+    final profileCtrl = Get.find<ProfileController>();
+    final success = await profileCtrl.changePassword(
+      _oldPassCtrl.text,
+      _newPassCtrl.text,
     );
+    setState(() => _isLoading = false);
+    if (success) {
+      Get.back();
+      Get.snackbar(
+        'Berhasil',
+        'Password berhasil diubah',
+        backgroundColor: AppColors.success.withValues(alpha: 0.1),
+        colorText: AppColors.success,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   @override

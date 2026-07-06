@@ -8,7 +8,43 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/widgets/garage_card.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_status_badge.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../data/models/user_model.dart';
+import '../../../data/models/garage_model.dart';
+import '../../../data/models/rental_model.dart';
+import '../../../presentation/auth/controllers/auth_controller.dart';
+import '../../../presentation/owner/controllers/owner_dashboard_controller.dart';
+import '../../../presentation/owner/controllers/owner_garage_controller.dart';
+import '../../../presentation/owner/controllers/owner_booking_controller.dart';
+
+Color _rentalStatusColor(String status) {
+  switch (status) {
+    case 'accepted':
+      return AppColors.success;
+    case 'rejected':
+      return AppColors.danger;
+    default:
+      return AppColors.warning;
+  }
+}
+
+String _rentalStatusLabel(String status) {
+  switch (status) {
+    case 'accepted':
+      return 'Diterima';
+    case 'rejected':
+      return 'Ditolak';
+    default:
+      return 'Menunggu';
+  }
+}
+
+Color _garageStatusColor(String status) {
+  return status == 'rented' ? AppColors.warning : AppColors.success;
+}
+
+String _garageStatusLabel(String status) {
+  return status == 'rented' ? 'Disewa' : 'Tersedia';
+}
 
 class OwnerDashboardPage extends StatefulWidget {
   const OwnerDashboardPage({super.key});
@@ -97,46 +133,44 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final owner = DummyData.ownerUser;
-    final garages = DummyData.ownerGarages;
-    final bookings = DummyData.ownerBookings;
+    final controller = Get.find<OwnerDashboardController>();
+    final owner = Get.find<AuthController>().currentUser.value;
+    if (owner == null) return const SizedBox.shrink();
 
-    final totalGarages = garages.length;
-    final incomingBookings =
-        bookings.where((b) => b.status == BookingStatus.pending).length;
-    final rented =
-        garages.where((g) => g.status == GarageStatus.rented).length;
-    final available =
-        garages.where((g) => g.status == GarageStatus.available).length;
+    return Obx(() {
+      final garages = controller.garages;
+      final totalGarages = controller.totalGarages;
+      final incomingBookings = controller.pendingBookings;
+      final rented = controller.rentedGarages;
+      final available = controller.availableGarages;
+      final pendingRentals = controller.pendingRentalsList;
 
-    final pendingBookings =
-        bookings.where((b) => b.status == BookingStatus.pending).toList();
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _OwnerHeroBanner(owner: owner),
-            const SizedBox(height: 24),
-            _QuickStats(
-              total: totalGarages,
-              incoming: incomingBookings,
-              rented: rented,
-              available: available,
-            ),
-            const SizedBox(height: 28),
-            if (pendingBookings.isNotEmpty) ...[
-              _PendingBookingsSection(bookings: pendingBookings),
+      return SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _OwnerHeroBanner(owner: owner),
+              const SizedBox(height: 24),
+              _QuickStats(
+                total: totalGarages,
+                incoming: incomingBookings,
+                rented: rented,
+                available: available,
+              ),
               const SizedBox(height: 28),
+              if (pendingRentals.isNotEmpty) ...[
+                _PendingBookingsSection(bookings: pendingRentals),
+                const SizedBox(height: 28),
+              ],
+              _OwnerGarageSection(garages: garages),
+              const SizedBox(height: 100),
             ],
-            _OwnerGarageSection(garages: garages),
-            const SizedBox(height: 100),
-          ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -351,7 +385,7 @@ class _StatCard extends StatelessWidget {
 // ─── Pending Bookings Section ─────────────────────────────────────────────
 
 class _PendingBookingsSection extends StatelessWidget {
-  final List<BookingModel> bookings;
+  final List<RentalModel> bookings;
   const _PendingBookingsSection({required this.bookings});
 
   @override
@@ -406,7 +440,7 @@ class _PendingBookingsSection extends StatelessWidget {
 }
 
 class _BookingCarouselCard extends StatelessWidget {
-  final BookingModel booking;
+  final RentalModel booking;
   final double cardWidth;
   final DateFormat dateFormat;
   final NumberFormat priceFormat;
@@ -466,15 +500,18 @@ class _BookingCarouselCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(booking.renterName,
+                    Text(booking.renterName ?? '',
                         style: AppTextStyles.labelLarge.copyWith(
                           fontWeight: FontWeight.w600,
                         )),
-                    Text(booking.garageName, style: AppTextStyles.caption),
+                    Text(booking.garageName ?? '', style: AppTextStyles.caption),
                   ],
                 ),
               ),
-              AppStatusBadge(bookingStatus: booking.status),
+              AppStatusBadge(
+                customLabel: _rentalStatusLabel(booking.status),
+                customColor: _rentalStatusColor(booking.status),
+              ),
             ],
           ),
           const Spacer(),
@@ -504,7 +541,7 @@ class _BookingCarouselCard extends StatelessWidget {
 // ─── Owner Booking Detail Sheet ───────────────────────────────────────────
 
 class _OwnerBookingDetailSheet extends StatelessWidget {
-  final BookingModel booking;
+  final RentalModel booking;
   const _OwnerBookingDetailSheet({required this.booking});
 
   @override
@@ -554,20 +591,23 @@ class _OwnerBookingDetailSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(booking.renterName,
+                      Text(booking.renterName ?? '',
                           style: AppTextStyles.headingSmall),
-                      Text(booking.garageName,
+                      Text(booking.garageName ?? '',
                           style: AppTextStyles.caption),
                     ],
                   ),
                 ),
-                AppStatusBadge(bookingStatus: booking.status),
+                AppStatusBadge(
+                  customLabel: _rentalStatusLabel(booking.status),
+                  customColor: _rentalStatusColor(booking.status),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 20),
 
-          _DetailRow(label: 'Status', value: _getStatusText(booking.status)),
+          _DetailRow(label: 'Status', value: _rentalStatusLabel(booking.status)),
           _DetailRow(
               label: 'Tanggal',
               value:
@@ -579,7 +619,7 @@ class _OwnerBookingDetailSheet extends StatelessWidget {
             _DetailRow(label: 'Catatan', value: booking.note!),
           const SizedBox(height: 24),
 
-          if (booking.status == BookingStatus.pending) ...[
+          if (booking.isPending) ...[
             Row(
               children: [
                 Expanded(
@@ -587,8 +627,11 @@ class _OwnerBookingDetailSheet extends StatelessWidget {
                     label: 'Tolak',
                     isOutline: true,
                     foregroundColor: AppColors.danger,
-                    onTap: () {
+                    onTap: () async {
                       Get.back();
+                      final bookingCtrl = Get.find<OwnerBookingController>();
+                      await bookingCtrl.rejectRental(booking.id!);
+                      await Get.find<OwnerDashboardController>().loadDashboard();
                       Get.snackbar('Berhasil', 'Booking ditolak',
                           snackPosition: SnackPosition.BOTTOM);
                     },
@@ -599,8 +642,11 @@ class _OwnerBookingDetailSheet extends StatelessWidget {
                   child: AppButton(
                     label: 'Terima',
                     backgroundColor: AppColors.success,
-                    onTap: () {
+                    onTap: () async {
                       Get.back();
+                      final bookingCtrl = Get.find<OwnerBookingController>();
+                      await bookingCtrl.approveRental(booking.id!);
+                      await Get.find<OwnerDashboardController>().loadDashboard();
                       Get.snackbar('Berhasil', 'Booking diterima',
                           snackPosition: SnackPosition.BOTTOM);
                     },
@@ -609,40 +655,43 @@ class _OwnerBookingDetailSheet extends StatelessWidget {
               ],
             ),
           ],
-          if (booking.status == BookingStatus.accepted)
+          if (booking.isAccepted)
             AppButton(
               label: 'Lihat Garasi',
               onTap: () {
                 Get.back();
-                final garage = DummyData.garages
-                    .firstWhere((g) => g.id == booking.garageId);
-                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+                final dashboardCtrl = Get.find<OwnerDashboardController>();
+                final dbGarage = dashboardCtrl.garages
+                    .where((g) => g.id == booking.garageId);
+                if (dbGarage.isNotEmpty) {
+                  Get.toNamed(AppRoutes.garageDetail,
+                      arguments: dbGarage.first);
+                } else {
+                  Get.snackbar('Info', 'Garasi tidak ditemukan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
-          if (booking.status == BookingStatus.rejected)
+          if (booking.isRejected)
             AppButton(
               label: 'Lihat Garasi',
               onTap: () {
                 Get.back();
-                final garage = DummyData.garages
-                    .firstWhere((g) => g.id == booking.garageId);
-                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+                final dashboardCtrl = Get.find<OwnerDashboardController>();
+                final dbGarage = dashboardCtrl.garages
+                    .where((g) => g.id == booking.garageId);
+                if (dbGarage.isNotEmpty) {
+                  Get.toNamed(AppRoutes.garageDetail,
+                      arguments: dbGarage.first);
+                } else {
+                  Get.snackbar('Info', 'Garasi tidak ditemukan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
         ],
       ),
     );
-  }
-
-  String _getStatusText(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.pending:
-        return 'Menunggu';
-      case BookingStatus.accepted:
-        return 'Diterima';
-      case BookingStatus.rejected:
-        return 'Ditolak';
-    }
   }
 }
 
@@ -799,7 +848,10 @@ class _CompactOwnerGarageTile extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      AppStatusBadge(garageStatus: garage.status),
+                      AppStatusBadge(
+                        customLabel: _garageStatusLabel(garage.status),
+                        customColor: _garageStatusColor(garage.status),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 4),
@@ -856,60 +908,64 @@ class _GarageListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final garages = DummyData.ownerGarages;
+    final controller = Get.find<OwnerGarageController>();
 
-    return SafeArea(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Row(
-              children: [
-                Text('Garasi Saya', style: AppTextStyles.headingMedium),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Get.toNamed(AppRoutes.ownerGarageAdd),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.add, size: 16, color: Colors.white),
-                        SizedBox(width: 4),
-                        Text('Tambah',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600)),
-                      ],
+    return Obx(() {
+      final garages = controller.garages;
+
+      return SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+              child: Row(
+                children: [
+                  Text('Garasi Saya', style: AppTextStyles.headingMedium),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Get.toNamed(AppRoutes.ownerGarageAdd),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.add, size: 16, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text('Tambah',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: garages.isEmpty
-                ? _buildEmpty()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(20),
-                    itemCount: garages.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (_, i) => GarageCard(
-                      garage: garages[i],
-                      showEditButton: true,
+            const SizedBox(height: 12),
+            Expanded(
+              child: garages.isEmpty
+                  ? _buildEmpty()
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: garages.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, i) => GarageCard(
+                        garage: garages[i],
+                        showEditButton: true,
+                      ),
                     ),
-                  ),
-          ),
-        ],
-      ),
-    );
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _buildEmpty() {
@@ -972,60 +1028,65 @@ class _BookingTabState extends State<_BookingTab>
     super.dispose();
   }
 
-  List<BookingModel> _getFiltered(BookingStatus status) =>
-      DummyData.ownerBookings.where((b) => b.status == status).toList();
-
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            color: AppColors.surface,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Booking Masuk', style: AppTextStyles.headingMedium),
+    final controller = Get.find<OwnerBookingController>();
+
+    return Obx(() {
+      final pending = controller.pendingRentals;
+      final accepted = controller.acceptedRentals;
+      final rejected = controller.rejectedRentals;
+
+      return SafeArea(
+        child: Column(
+          children: [
+            Container(
+              color: AppColors.surface,
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Booking Masuk', style: AppTextStyles.headingMedium),
+                    ),
                   ),
-                ),
-                TabBar(
-                  controller: _tabController,
-                  labelColor: AppColors.primary,
-                  unselectedLabelColor: AppColors.textSecondary,
-                  indicatorColor: AppColors.primary,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: AppTextStyles.labelMedium.copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                  TabBar(
+                    controller: _tabController,
+                    labelColor: AppColors.primary,
+                    unselectedLabelColor: AppColors.textSecondary,
+                    indicatorColor: AppColors.primary,
+                    indicatorSize: TabBarIndicatorSize.label,
+                    labelStyle: AppTextStyles.labelMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                    tabs: const [
+                      Tab(text: 'Menunggu'),
+                      Tab(text: 'Diterima'),
+                      Tab(text: 'Ditolak'),
+                    ],
                   ),
-                  tabs: const [
-                    Tab(text: 'Menunggu'),
-                    Tab(text: 'Diterima'),
-                    Tab(text: 'Ditolak'),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList(_getFiltered(BookingStatus.pending)),
-                _buildList(_getFiltered(BookingStatus.accepted)),
-                _buildList(_getFiltered(BookingStatus.rejected)),
-              ],
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList(pending),
+                  _buildList(accepted),
+                  _buildList(rejected),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildList(List<BookingModel> list) {
+  Widget _buildList(List<RentalModel> list) {
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -1068,7 +1129,7 @@ class _BookingTabState extends State<_BookingTab>
 }
 
 class _BookingCard extends StatelessWidget {
-  final BookingModel booking;
+  final RentalModel booking;
   final DateFormat dateFormat;
   final NumberFormat priceFormat;
 
@@ -1107,12 +1168,15 @@ class _BookingCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(booking.renterName, style: AppTextStyles.headingSmall),
-                    Text(booking.garageName, style: AppTextStyles.caption),
+                    Text(booking.renterName ?? '', style: AppTextStyles.headingSmall),
+                    Text(booking.garageName ?? '', style: AppTextStyles.caption),
                   ],
                 ),
               ),
-              AppStatusBadge(bookingStatus: booking.status),
+              AppStatusBadge(
+                customLabel: _rentalStatusLabel(booking.status),
+                customColor: _rentalStatusColor(booking.status),
+              ),
             ],
           ),
           const SizedBox(height: 12),
@@ -1133,7 +1197,7 @@ class _BookingCard extends StatelessWidget {
             const SizedBox(height: 6),
             _InfoRow(label: 'Catatan', value: booking.note!),
           ],
-          if (booking.status == BookingStatus.pending) ...[
+          if (booking.isPending) ...[
             const SizedBox(height: 14),
             Row(
               children: [
@@ -1154,8 +1218,13 @@ class _BookingCard extends StatelessWidget {
                               child: const Text('Batal'),
                             ),
                             TextButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 Get.back();
+                                final bookingCtrl =
+                                    Get.find<OwnerBookingController>();
+                                await bookingCtrl.rejectRental(booking.id!);
+                                await Get.find<OwnerDashboardController>()
+                                    .loadDashboard();
                                 Get.snackbar(
                                     'Berhasil', 'Booking berhasil ditolak',
                                     snackPosition: SnackPosition.BOTTOM);
@@ -1187,8 +1256,13 @@ class _BookingCard extends StatelessWidget {
                               child: const Text('Batal'),
                             ),
                             TextButton(
-                              onPressed: () {
+                              onPressed: () async {
                                 Get.back();
+                                final bookingCtrl =
+                                    Get.find<OwnerBookingController>();
+                                await bookingCtrl.approveRental(booking.id!);
+                                await Get.find<OwnerDashboardController>()
+                                    .loadDashboard();
                                 Get.snackbar(
                                     'Berhasil', 'Booking berhasil diterima',
                                     snackPosition: SnackPosition.BOTTOM);
@@ -1255,7 +1329,8 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = DummyData.ownerUser;
+    final user = Get.find<AuthController>().currentUser.value;
+    if (user == null) return const SizedBox.shrink();
 
     return SafeArea(
       child: Column(
@@ -1330,7 +1405,8 @@ class _ProfileTab extends StatelessWidget {
                       _MenuItem(
                         icon: Iconsax.edit,
                         label: 'Ubah Profil',
-                        onTap: () => Get.toNamed(AppRoutes.editProfile, arguments: DummyData.ownerUser),
+                        onTap: () => Get.toNamed(AppRoutes.editProfile,
+                            arguments: user),
                       ),
                       _MenuItem(
                         icon: Iconsax.lock,
@@ -1390,7 +1466,7 @@ class _ProfileTab extends StatelessWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Get.offAllNamed(AppRoutes.login),
+            onPressed: () => Get.find<AuthController>().logout(),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Logout'),
           ),

@@ -5,7 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/widgets/app_status_badge.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../data/models/rental_model.dart';
+import '../../../presentation/renter/controllers/renter_booking_controller.dart';
 
 class RenterRentalHistoryPage extends StatefulWidget {
   const RenterRentalHistoryPage({super.key});
@@ -18,6 +19,7 @@ class RenterRentalHistoryPage extends StatefulWidget {
 class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final bookingCtrl = Get.find<RenterBookingController>();
   final _dateFormat = DateFormat('d MMM yyyy', 'id_ID');
   final _priceFormat = NumberFormat.currency(
     locale: 'id_ID',
@@ -29,6 +31,7 @@ class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    bookingCtrl.loadMyRentals();
   }
 
   @override
@@ -37,10 +40,10 @@ class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
     super.dispose();
   }
 
-  List<BookingModel> _getFiltered(BookingStatus? status) {
-    final all = DummyData.renterBookings;
+  List<RentalModel> _getFiltered(String? status) {
+    final all = bookingCtrl.rentals;
     if (status == null) return all;
-    return all.where((b) => b.status == status).toList();
+    return all.where((r) => r.status == status).toList();
   }
 
   @override
@@ -73,19 +76,19 @@ class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
           ],
         ),
       ),
-      body: TabBarView(
+      body: Obx(() => TabBarView(
         controller: _tabController,
         children: [
           _buildList(_getFiltered(null)),
-          _buildList(_getFiltered(BookingStatus.pending)),
-          _buildList(_getFiltered(BookingStatus.accepted)),
-          _buildList(_getFiltered(BookingStatus.rejected)),
+          _buildList(_getFiltered('pending')),
+          _buildList(_getFiltered('accepted')),
+          _buildList(_getFiltered('rejected')),
         ],
-      ),
+      )),
     );
   }
 
-  Widget _buildList(List<BookingModel> list) {
+  Widget _buildList(List<RentalModel> list) {
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -107,7 +110,19 @@ class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
-        final b = list[i];
+        final r = list[i];
+        final statusLabel = r.isPending
+            ? 'Menunggu'
+            : r.isAccepted
+                ? 'Diterima'
+                : r.isRejected
+                    ? 'Ditolak'
+                    : 'Dibatalkan';
+        final statusColor = r.isPending
+            ? AppColors.warning
+            : r.isAccepted
+                ? AppColors.success
+                : AppColors.danger;
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -132,24 +147,24 @@ class _RenterRentalHistoryPageState extends State<RenterRentalHistoryPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(b.garageName,
+                    Text(r.garageName ?? '-',
                         style: AppTextStyles.headingSmall.copyWith(
                           fontSize: 14,
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      '${_dateFormat.format(b.startDate)} – ${_dateFormat.format(b.endDate)}',
+                      '${_dateFormat.format(r.startDate)} – ${_dateFormat.format(r.endDate)}',
                       style: AppTextStyles.caption,
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _priceFormat.format(b.totalPrice),
+                      _priceFormat.format(r.totalPrice),
                       style: AppTextStyles.price.copyWith(fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              AppStatusBadge(bookingStatus: b.status),
+              AppStatusBadge(customLabel: statusLabel, customColor: statusColor),
             ],
           ),
         );

@@ -4,7 +4,8 @@ import 'package:iconsax/iconsax.dart';
 import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/widgets/garage_card.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../data/models/garage_model.dart';
+import '../../../data/repositories/garage_repository.dart';
 
 class RenterSearchPage extends StatefulWidget {
   const RenterSearchPage({super.key});
@@ -15,12 +16,21 @@ class RenterSearchPage extends StatefulWidget {
 
 class _RenterSearchPageState extends State<RenterSearchPage> {
   final _searchCtrl = TextEditingController();
+  final _garageRepo = GarageRepository();
+  List<GarageModel> _allGarages = [];
   List<GarageModel> _results = [];
 
   @override
   void initState() {
     super.initState();
-    _results = DummyData.availableGarages;
+    _loadGarages();
+  }
+
+  Future<void> _loadGarages() async {
+    _allGarages = await _garageRepo.getAvailableGarages();
+    setState(() {
+      _results = _allGarages;
+    });
   }
 
   @override
@@ -31,12 +41,16 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
 
   void _onSearch(String query) {
     setState(() {
-      _results = DummyData.garages
-          .where((g) =>
-              g.name.toLowerCase().contains(query.toLowerCase()) ||
-              g.address.toLowerCase().contains(query.toLowerCase()) ||
-              g.city.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+      if (query.isEmpty) {
+        _results = _allGarages;
+      } else {
+        _results = _allGarages
+            .where((g) =>
+                g.name.toLowerCase().contains(query.toLowerCase()) ||
+                g.address.toLowerCase().contains(query.toLowerCase()) ||
+                g.city.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
     });
   }
 

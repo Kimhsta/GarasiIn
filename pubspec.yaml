@@ -11,8 +11,6 @@ dependencies:
     sdk: flutter
 
   # State management & routing
-  flutter_test:
-    sdk: flutter
   get: ^4.6.6
 
   # Icons
@@ -26,6 +24,19 @@ dependencies:
 
   # Image picker for profile photo
   image_picker: ^1.0.7
+
+  # SQLite local database
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  path_provider: ^2.1.1
+
+  # Session management
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  sqflite_common_ffi: ^2.3.0
 
 flutter:
   uses-material-design: true

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../data/models/garage_model.dart';
 import 'app_status_badge.dart';
 
 class GarageCard extends StatelessWidget {
@@ -57,7 +57,10 @@ class GarageCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   left: 8,
-                  child: AppStatusBadge(garageStatus: garage.status),
+                  child: AppStatusBadge(
+                    customLabel: garage.isAvailable ? 'Tersedia' : 'Disewa',
+                    customColor: garage.isAvailable ? AppColors.success : AppColors.warning,
+                  ),
                 ),
               ],
             ),

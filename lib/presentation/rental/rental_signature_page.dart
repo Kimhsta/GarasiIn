@@ -4,8 +4,11 @@ import 'package:iconsax/iconsax.dart';
 import 'package:signature/signature.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
-import '../../app/routes/app_routes.dart';
 import '../../core/widgets/app_button.dart';
+import '../../presentation/rental/controllers/rental_signature_controller.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
+import '../../data/repositories/user_repository.dart';
+import '../../data/models/garage_model.dart';
 
 class RentalSignaturePage extends StatefulWidget {
   const RentalSignaturePage({super.key});
@@ -15,62 +18,25 @@ class RentalSignaturePage extends StatefulWidget {
 }
 
 class _RentalSignaturePageState extends State<RentalSignaturePage> {
-  late final SignatureController _signatureCtrl;
-  bool _hasSigned = false;
-  bool _isLoading = false;
+  final sigCtrl = Get.find<RentalSignatureController>();
+  final authCtrl = Get.find<AuthController>();
 
   @override
   void initState() {
     super.initState();
-    _signatureCtrl = SignatureController(
-      penStrokeWidth: 2.5,
-      penColor: AppColors.primaryDark,
-      exportBackgroundColor: Colors.white,
-    );
-    _signatureCtrl.addListener(() {
-      if (_signatureCtrl.isNotEmpty && !_hasSigned) {
-        setState(() => _hasSigned = true);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _signatureCtrl.dispose();
-    super.dispose();
-  }
-
-  void _onClear() {
-    _signatureCtrl.clear();
-    setState(() => _hasSigned = false);
-  }
-
-  void _onSubmit() async {
-    if (!_hasSigned) {
-      Get.snackbar(
-        'Perhatian',
-        'Silakan buat tanda tangan terlebih dahulu',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-
-    Get.offAllNamed(AppRoutes.renterHome);
-    Get.snackbar(
-      'Berhasil',
-      'Pengajuan sewa berhasil dikirim! Tunggu konfirmasi pemilik.',
-      backgroundColor: AppColors.success.withValues(alpha: 0.1),
-      colorText: AppColors.success,
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(seconds: 4),
-    );
+    sigCtrl.signatureController.clear();
+    sigCtrl.hasSigned.value = false;
+    sigCtrl.isLoading.value = false;
   }
 
   @override
   Widget build(BuildContext context) {
+    final args = Get.arguments as Map<String, dynamic>;
+    final garage = args['garage'] as GarageModel;
+    final renter = authCtrl.currentUser.value;
+    if (renter == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    final renterName = renter.name;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -88,7 +54,6 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Info
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -120,11 +85,10 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
                   Text('Tanda Tangan Penyewa',
                       style: AppTextStyles.headingSmall),
                   const SizedBox(height: 8),
-                  Text('Andi Pratama', style: AppTextStyles.bodySmall),
+                  Text(renterName, style: AppTextStyles.bodySmall),
 
                   const SizedBox(height: 14),
 
-                  // Signature Area
                   Container(
                     height: 220,
                     width: double.infinity,
@@ -132,20 +96,20 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: _hasSigned
+                        color: sigCtrl.hasSigned.value
                             ? AppColors.primary
                             : AppColors.border,
-                        width: _hasSigned ? 1.5 : 1,
+                        width: sigCtrl.hasSigned.value ? 1.5 : 1,
                       ),
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child: Stack(
+                    child: Obx(() => Stack(
                       children: [
                         Signature(
-                          controller: _signatureCtrl,
+                          controller: sigCtrl.signatureController,
                           backgroundColor: Colors.white,
                         ),
-                        if (!_hasSigned)
+                        if (!sigCtrl.hasSigned.value)
                           Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -163,16 +127,15 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
                             ),
                           ),
                       ],
-                    ),
+                    )),
                   ),
 
                   const SizedBox(height: 12),
 
-                  // Clear button
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
-                      onPressed: _onClear,
+                      onPressed: sigCtrl.clearSignature,
                       icon: const Icon(Icons.refresh_rounded,
                           size: 16, color: AppColors.danger),
                       label: Text('Hapus Tanda Tangan',
@@ -185,31 +148,31 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
 
                   const SizedBox(height: 8),
 
-                  // Status indicator
-                  if (_hasSigned)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                            color: AppColors.success.withValues(alpha: 0.2)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.check_circle_outline,
-                              size: 16, color: AppColors.success),
-                          const SizedBox(width: 6),
-                          Text('Tanda tangan tersimpan',
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w500,
-                              )),
-                        ],
-                      ),
-                    ),
+                  Obx(() => sigCtrl.hasSigned.value
+                      ? Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: AppColors.success.withValues(alpha: 0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle_outline,
+                                  size: 16, color: AppColors.success),
+                              const SizedBox(width: 6),
+                              Text('Tanda tangan tersimpan',
+                                  style: AppTextStyles.caption.copyWith(
+                                    color: AppColors.success,
+                                    fontWeight: FontWeight.w500,
+                                  )),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink()),
 
                   const SizedBox(height: 32),
                 ],
@@ -217,18 +180,37 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
             ),
           ),
 
-          // Sticky bottom
           Container(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             decoration: BoxDecoration(
               color: AppColors.surface,
               border: const Border(top: BorderSide(color: AppColors.border)),
             ),
-            child: AppButton(
+            child: Obx(() => AppButton(
               label: 'Kirim Pengajuan',
-              isLoading: _isLoading,
-              onTap: _onSubmit,
-            ),
+              isLoading: sigCtrl.isLoading.value,
+              onTap: () async {
+                final owner = await UserRepository().getUserById(garage.ownerId);
+                if (owner == null) return;
+                await sigCtrl.submitRentalWithContract({
+                  'garageId': garage.id!,
+                  'ownerId': garage.ownerId,
+                  'garageName': garage.name,
+                  'garageAddress': '${garage.address}, ${garage.city}',
+                  'ownerName': owner.name,
+                  'ownerEmail': owner.email,
+                  'ownerPhone': owner.phone,
+                  'renterName': renter.name,
+                  'renterEmail': renter.email,
+                  'renterPhone': renter.phone,
+                  'startDate': args['startDate'] as DateTime,
+                  'endDate': args['endDate'] as DateTime,
+                  'totalPrice': args['total'] as int,
+                  'note': args['note'] as String?,
+                  'contractNumber': args['contractNumber'] as String?,
+                });
+              },
+            )),
           ),
         ],
       ),

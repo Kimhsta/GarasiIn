@@ -8,7 +8,12 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/widgets/garage_card.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/app_button.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../presentation/auth/controllers/auth_controller.dart';
+import '../../../presentation/renter/controllers/renter_home_controller.dart';
+import '../../../presentation/renter/controllers/renter_booking_controller.dart';
+import '../../../data/models/user_model.dart';
+import '../../../data/models/garage_model.dart';
+import '../../../data/models/rental_model.dart';
 
 class RenterHomePage extends StatefulWidget {
   const RenterHomePage({super.key});
@@ -28,7 +33,7 @@ class _RenterHomePageState extends State<RenterHomePage> {
   void _onCategoryTap(int categoryIndex) {
     setState(() {
       _selectedCategory = categoryIndex;
-      _currentIndex = 1; // Switch to Search tab
+      _currentIndex = 1;
     });
   }
 
@@ -88,8 +93,6 @@ class _RenterHomePageState extends State<RenterHomePage> {
   }
 }
 
-// ─── Home Tab ─────────────────────────────────────────────────────────────
-
 class _HomeTab extends StatelessWidget {
   final VoidCallback onSearchTap;
   final void Function(int categoryIndex) onCategoryTap;
@@ -97,31 +100,35 @@ class _HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final renter = DummyData.renterUser;
-    final garages = DummyData.availableGarages;
+    final auth = Get.find<AuthController>();
+    final homeCtrl = Get.find<RenterHomeController>();
 
-    return SafeArea(
-      child: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _HeroBanner(renter: renter, onSearchTap: onSearchTap),
-            const SizedBox(height: 24),
-            _CategoryPills(onCategoryTap: onCategoryTap),
-            const SizedBox(height: 28),
-            _FeaturedSection(garages: garages, onSearchTap: onSearchTap),
-            const SizedBox(height: 28),
-            const _RecentSection(),
-            const SizedBox(height: 100),
-          ],
+    return Obx(() {
+      final renter = auth.currentUser.value;
+      if (renter == null) return const SizedBox.shrink();
+      final garages = homeCtrl.garages;
+
+      return SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HeroBanner(renter: renter, onSearchTap: onSearchTap),
+              const SizedBox(height: 24),
+              _CategoryPills(onCategoryTap: onCategoryTap),
+              const SizedBox(height: 28),
+              _FeaturedSection(garages: garages, onSearchTap: onSearchTap),
+              const SizedBox(height: 28),
+              _RecentSection(),
+              const SizedBox(height: 100),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
-
-// ─── Hero Banner ──────────────────────────────────────────────────────────
 
 class _HeroBanner extends StatelessWidget {
   final UserModel renter;
@@ -201,8 +208,6 @@ class _HeroBanner extends StatelessWidget {
     );
   }
 }
-
-// ─── Category Pills ───────────────────────────────────────────────────────
 
 class _CategoryPills extends StatelessWidget {
   final void Function(int categoryIndex) onCategoryTap;
@@ -305,8 +310,6 @@ class _CategoryCard extends StatelessWidget {
     );
   }
 }
-
-// ─── Featured Carousel ────────────────────────────────────────────────────
 
 class _FeaturedSection extends StatelessWidget {
   final List<GarageModel> garages;
@@ -495,43 +498,46 @@ class _FeaturedCard extends StatelessWidget {
   }
 }
 
-// ─── Recent List ──────────────────────────────────────────────────────────
-
 class _RecentSection extends StatelessWidget {
   const _RecentSection();
 
   @override
   Widget build(BuildContext context) {
-    final garages = DummyData.availableGarages;
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Terbaru', style: AppTextStyles.headingSmall),
-              Text(
-                '${garages.length} garasi',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w500,
+    final homeCtrl = Get.find<RenterHomeController>();
+
+    return Obx(() {
+      final garages = homeCtrl.garages;
+
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Terbaru', style: AppTextStyles.headingSmall),
+                Text(
+                  '${garages.length} garasi',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        ListView.separated(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: garages.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) => _CompactGarageTile(garage: garages[i]),
-        ),
-      ],
-    );
+          const SizedBox(height: 14),
+          ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: garages.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (_, i) => _CompactGarageTile(garage: garages[i]),
+          ),
+        ],
+      );
+    });
   }
 }
 
@@ -617,8 +623,6 @@ class _CompactGarageTile extends StatelessWidget {
   }
 }
 
-// ─── Search Tab ───────────────────────────────────────────────────────────
-
 class _SearchTab extends StatefulWidget {
   final int initialCategory;
   const _SearchTab({this.initialCategory = -1});
@@ -629,41 +633,21 @@ class _SearchTab extends StatefulWidget {
 
 class _SearchTabState extends State<_SearchTab> {
   final _searchCtrl = TextEditingController();
-  List<GarageModel> _results = [];
-  int _selectedCategory = -1;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.initialCategory;
-    _applyFilter();
+    final controller = Get.find<RenterHomeController>();
+    controller.filterByPrice(widget.initialCategory);
   }
 
   @override
   void didUpdateWidget(_SearchTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialCategory != oldWidget.initialCategory) {
-      _selectedCategory = widget.initialCategory;
-      _applyFilter();
+      final controller = Get.find<RenterHomeController>();
+      controller.filterByPrice(widget.initialCategory);
     }
-  }
-
-  void _applyFilter() {
-    setState(() {
-      if (_selectedCategory == -1) {
-        _results = DummyData.availableGarages;
-      } else {
-        _results = DummyData.availableGarages.where((g) {
-          switch (_selectedCategory) {
-            case 0: return true; // Terdekat - all
-            case 1: return true; // Populer - all
-            case 2: return g.pricePerMonth < 300000; // Murah
-            case 3: return g.pricePerMonth > 500000; // Premium
-            default: return true;
-          }
-        }).toList();
-      }
-    });
   }
 
   @override
@@ -672,37 +656,32 @@ class _SearchTabState extends State<_SearchTab> {
     super.dispose();
   }
 
-  void _onSearch(String query) {
-    setState(() {
-      _results = DummyData.garages
-          .where((g) =>
-              g.name.toLowerCase().contains(query.toLowerCase()) ||
-              g.address.toLowerCase().contains(query.toLowerCase()) ||
-              g.city.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
-  }
-
   void _onCategorySelect(int index) {
-    setState(() {
-      _selectedCategory = index;
-      _searchCtrl.clear();
-    });
-    _applyFilter();
+    final controller = Get.find<RenterHomeController>();
+    _searchCtrl.clear();
+    controller.searchKeyword.value = '';
+    controller.filterByPrice(index);
   }
 
-  String _getCategoryTitle() {
-    switch (_selectedCategory) {
-      case 0: return 'Terdekat';
-      case 1: return 'Populer';
-      case 2: return 'Murah (< Rp300rb)';
-      case 3: return 'Premium (> Rp500rb)';
-      default: return 'Cari Garasi';
+  String _getCategoryTitle(RenterHomeController controller) {
+    switch (controller.selectedPriceFilter.value) {
+      case 0:
+        return 'Terdekat';
+      case 1:
+        return 'Populer';
+      case 2:
+        return 'Murah (< Rp300rb)';
+      case 3:
+        return 'Premium (> Rp500rb)';
+      default:
+        return 'Cari Garasi';
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<RenterHomeController>();
+
     return SafeArea(
       child: Column(
         children: [
@@ -712,36 +691,36 @@ class _SearchTabState extends State<_SearchTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    if (_selectedCategory >= 0) ...[
-                      GestureDetector(
-                        onTap: () {
-                          setState(() => _selectedCategory = -1);
-                          _applyFilter();
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.softSurface,
-                            borderRadius: BorderRadius.circular(10),
+                Obx(() {
+                  final sel = controller.selectedPriceFilter.value;
+                  return Row(
+                    children: [
+                      if (sel >= 0) ...[
+                        GestureDetector(
+                          onTap: () => _onCategorySelect(-1),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.softSurface,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.arrow_back_rounded,
+                                size: 20, color: AppColors.textPrimary),
                           ),
-                          child: const Icon(Icons.arrow_back_rounded,
-                              size: 20, color: AppColors.textPrimary),
                         ),
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(
+                        child: Text(_getCategoryTitle(controller),
+                            style: AppTextStyles.headingMedium),
                       ),
-                      const SizedBox(width: 12),
                     ],
-                    Expanded(
-                      child: Text(_getCategoryTitle(),
-                          style: AppTextStyles.headingMedium),
-                    ),
-                  ],
-                ),
+                  );
+                }),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _searchCtrl,
-                  onChanged: _onSearch,
+                  onChanged: (v) => controller.searchGarages(v),
                   style: AppTextStyles.bodyMedium,
                   decoration: InputDecoration(
                     hintText: 'Cari nama garasi atau lokasi...',
@@ -751,7 +730,7 @@ class _SearchTabState extends State<_SearchTab> {
                         ? GestureDetector(
                             onTap: () {
                               _searchCtrl.clear();
-                              _onSearch('');
+                              controller.searchGarages('');
                             },
                             child: const Icon(Icons.close,
                                 size: 18, color: AppColors.textSecondary),
@@ -760,49 +739,58 @@ class _SearchTabState extends State<_SearchTab> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _FilterPill(
-                        label: 'Semua Harga',
-                        isSelected: _selectedCategory == -1,
-                        onTap: () => _onCategorySelect(-1),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: '< Rp300rb',
-                        isSelected: _selectedCategory == 2,
-                        onTap: () => _onCategorySelect(2),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: 'Rp300–500rb',
-                        isSelected: false,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: '> Rp500rb',
-                        isSelected: _selectedCategory == 3,
-                        onTap: () => _onCategorySelect(3),
-                      ),
-                    ],
-                  ),
-                ),
+                Obx(() {
+                  final sel = controller.selectedPriceFilter.value;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _FilterPill(
+                          label: 'Semua Harga',
+                          isSelected: sel == -1,
+                          onTap: () => _onCategorySelect(-1),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterPill(
+                          label: '< Rp300rb',
+                          isSelected: sel == 2,
+                          onTap: () => _onCategorySelect(2),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterPill(
+                          label: 'Rp300–500rb',
+                          isSelected: sel == 4,
+                          onTap: () => _onCategorySelect(4),
+                        ),
+                        const SizedBox(width: 8),
+                        _FilterPill(
+                          label: '> Rp500rb',
+                          isSelected: sel == 3,
+                          onTap: () => _onCategorySelect(3),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
               ],
             ),
           ),
           const Divider(height: 1),
           Expanded(
-            child: _results.isEmpty
-                ? _buildEmpty()
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _results.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 10),
-                    itemBuilder: (_, i) => GarageCard(garage: _results[i]),
-                  ),
+            child: Obx(() {
+              final results = controller.searchResults;
+
+              if (results.isEmpty) {
+                return _buildEmpty();
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: results.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (_, i) => GarageCard(garage: results[i]),
+              );
+            }),
           ),
         ],
       ),
@@ -862,8 +850,6 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
-// ─── Booking History Tab ──────────────────────────────────────────────────
-
 class _BookingHistoryTab extends StatefulWidget {
   const _BookingHistoryTab();
 
@@ -893,25 +879,27 @@ class _BookingHistoryTabState extends State<_BookingHistoryTab>
     super.dispose();
   }
 
-  List<BookingModel> _getFiltered(BookingStatus? status) {
-    final all = DummyData.renterBookings;
-    if (status == null) return all;
-    return all.where((b) => b.status == status).toList();
+  List<RentalModel> _getFiltered(RenterBookingController controller, String? status) {
+    final all = controller.rentals;
+    if (status == null) return all.toList();
+    return all.where((r) => r.status == status).toList();
   }
 
-  void _showBookingDetail(BookingModel booking) {
+  void _showBookingDetail(RentalModel rental) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => _BookingDetailSheet(booking: booking),
+      builder: (_) => _BookingDetailSheet(rental: rental),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<RenterBookingController>();
+
     return SafeArea(
       child: Column(
         children: [
@@ -949,22 +937,24 @@ class _BookingHistoryTabState extends State<_BookingHistoryTab>
             ),
           ),
           Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildList(_getFiltered(null)),
-                _buildList(_getFiltered(BookingStatus.pending)),
-                _buildList(_getFiltered(BookingStatus.accepted)),
-                _buildList(_getFiltered(BookingStatus.rejected)),
-              ],
-            ),
+            child: Obx(() {
+              return TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildList(_getFiltered(controller, null)),
+                  _buildList(_getFiltered(controller, 'pending')),
+                  _buildList(_getFiltered(controller, 'accepted')),
+                  _buildList(_getFiltered(controller, 'rejected')),
+                ],
+              );
+            }),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildList(List<BookingModel> list) {
+  Widget _buildList(List<RentalModel> list) {
     if (list.isEmpty) {
       return Center(
         child: Column(
@@ -986,9 +976,22 @@ class _BookingHistoryTabState extends State<_BookingHistoryTab>
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
-        final b = list[i];
+        final r = list[i];
+        final badgeLabel = r.isPending
+            ? 'Menunggu'
+            : r.isAccepted
+                ? 'Diterima'
+                : r.isRejected
+                    ? 'Ditolak'
+                    : 'Dibatalkan';
+        final badgeColor = r.isPending
+            ? AppColors.warning
+            : r.isAccepted
+                ? AppColors.success
+                : AppColors.danger;
+
         return GestureDetector(
-          onTap: () => _showBookingDetail(b),
+          onTap: () => _showBookingDetail(r),
           child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -1013,24 +1016,27 @@ class _BookingHistoryTabState extends State<_BookingHistoryTab>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(b.garageName,
+                    Text(r.garageName ?? '-',
                         style: AppTextStyles.headingSmall.copyWith(
                           fontSize: 14,
                         )),
                     const SizedBox(height: 4),
                     Text(
-                      '${_dateFormat.format(b.startDate)} – ${_dateFormat.format(b.endDate)}',
+                      '${_dateFormat.format(r.startDate)} – ${_dateFormat.format(r.endDate)}',
                       style: AppTextStyles.caption,
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      _priceFormat.format(b.totalPrice),
+                      _priceFormat.format(r.totalPrice),
                       style: AppTextStyles.price.copyWith(fontSize: 13),
                     ),
                   ],
                 ),
               ),
-              AppStatusBadge(bookingStatus: b.status),
+              AppStatusBadge(
+                customLabel: badgeLabel,
+                customColor: badgeColor,
+              ),
             ],
           ),
         ),
@@ -1040,11 +1046,9 @@ class _BookingHistoryTabState extends State<_BookingHistoryTab>
   }
 }
 
-// ─── Booking Detail Sheet ─────────────────────────────────────────────────
-
 class _BookingDetailSheet extends StatelessWidget {
-  final BookingModel booking;
-  const _BookingDetailSheet({required this.booking});
+  final RentalModel rental;
+  const _BookingDetailSheet({required this.rental});
 
   @override
   Widget build(BuildContext context) {
@@ -1054,6 +1058,16 @@ class _BookingDetailSheet extends StatelessWidget {
       symbol: 'Rp',
       decimalDigits: 0,
     );
+    final bookingCtrl = Get.find<RenterBookingController>();
+    final homeCtrl = Get.find<RenterHomeController>();
+
+    final badgeLabel = rental.isPending
+        ? 'Menunggu'
+        : rental.isAccepted
+            ? 'Diterima'
+            : rental.isRejected
+                ? 'Ditolak'
+                : 'Dibatalkan';
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -1096,9 +1110,9 @@ class _BookingDetailSheet extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(booking.garageName,
+                      Text(rental.garageName ?? '-',
                           style: AppTextStyles.headingSmall),
-                      Text(booking.renterName,
+                      Text(rental.renterName ?? '-',
                           style: AppTextStyles.caption),
                     ],
                   ),
@@ -1108,47 +1122,63 @@ class _BookingDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          _DetailRow(label: 'Status', value: _getStatusText(booking.status)),
+          _DetailRow(
+            label: 'Status',
+            value: badgeLabel,
+          ),
           _DetailRow(
               label: 'Tanggal',
               value:
-                  '${dateFormat.format(booking.startDate)} – ${dateFormat.format(booking.endDate)}'),
+                  '${dateFormat.format(rental.startDate)} – ${dateFormat.format(rental.endDate)}'),
           _DetailRow(
               label: 'Total',
-              value: priceFormat.format(booking.totalPrice)),
-          if (booking.note != null && booking.note!.isNotEmpty)
-            _DetailRow(label: 'Catatan', value: booking.note!),
+              value: priceFormat.format(rental.totalPrice)),
+          if (rental.note != null && rental.note!.isNotEmpty)
+            _DetailRow(label: 'Catatan', value: rental.note!),
           const SizedBox(height: 24),
 
-          if (booking.status == BookingStatus.accepted)
+          if (rental.isAccepted)
             AppButton(
               label: 'Lihat Garasi',
               onTap: () {
                 Get.back();
-                final garage = DummyData.garages
-                    .firstWhere((g) => g.id == booking.garageId);
-                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+                final matches = homeCtrl.garages
+                    .where((g) => g.id == rental.garageId);
+                if (matches.isNotEmpty) {
+                  Get.toNamed(AppRoutes.garageDetail, arguments: matches.first);
+                } else {
+                  Get.snackbar('Info', 'Garasi tidak ditemukan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
-          if (booking.status == BookingStatus.rejected)
+          if (rental.isRejected)
             AppButton(
               label: 'Ajukan Lagi',
               onTap: () {
                 Get.back();
-                final garage = DummyData.garages
-                    .firstWhere((g) => g.id == booking.garageId);
-                Get.toNamed(AppRoutes.rentalApply, arguments: garage);
+                final matches = homeCtrl.garages
+                    .where((g) => g.id == rental.garageId);
+                if (matches.isNotEmpty) {
+                  Get.toNamed(AppRoutes.rentalApply, arguments: matches.first);
+                } else {
+                  Get.snackbar('Info', 'Garasi tidak ditemukan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
-          if (booking.status == BookingStatus.pending) ...[
+          if (rental.isPending) ...[
             AppButton(
               label: 'Batalkan Booking',
               isOutline: true,
               foregroundColor: AppColors.danger,
-              onTap: () {
+              onTap: () async {
                 Get.back();
-                Get.snackbar('Berhasil', 'Booking berhasil dibatalkan',
-                    snackPosition: SnackPosition.BOTTOM);
+                final success = await bookingCtrl.cancelRental(rental.id!);
+                if (success) {
+                  Get.snackbar('Berhasil', 'Booking berhasil dibatalkan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
             const SizedBox(height: 10),
@@ -1156,26 +1186,20 @@ class _BookingDetailSheet extends StatelessWidget {
               label: 'Lihat Garasi',
               onTap: () {
                 Get.back();
-                final garage = DummyData.garages
-                    .firstWhere((g) => g.id == booking.garageId);
-                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+                final matches = homeCtrl.garages
+                    .where((g) => g.id == rental.garageId);
+                if (matches.isNotEmpty) {
+                  Get.toNamed(AppRoutes.garageDetail, arguments: matches.first);
+                } else {
+                  Get.snackbar('Info', 'Garasi tidak ditemukan',
+                      snackPosition: SnackPosition.BOTTOM);
+                }
               },
             ),
           ],
         ],
       ),
     );
-  }
-
-  String _getStatusText(BookingStatus status) {
-    switch (status) {
-      case BookingStatus.pending:
-        return 'Menunggu';
-      case BookingStatus.accepted:
-        return 'Diterima';
-      case BookingStatus.rejected:
-        return 'Ditolak';
-    }
   }
 }
 
@@ -1212,136 +1236,139 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-// ─── Profile Tab ──────────────────────────────────────────────────────────
-
 class _ProfileTab extends StatelessWidget {
   final VoidCallback onBookingTap;
   const _ProfileTab({required this.onBookingTap});
 
   @override
   Widget build(BuildContext context) {
-    final user = DummyData.renterUser;
+    final auth = Get.find<AuthController>();
 
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryDark,
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    size: 40,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  user.name,
-                  style: AppTextStyles.headingMedium.copyWith(
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user.email,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25)),
-                  ),
-                  child: Text(
-                    'Penyewa',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+    return Obx(() {
+      final user = auth.currentUser.value;
+      if (user == null) return const SizedBox.shrink();
+
+      return SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              decoration: const BoxDecoration(
+                color: AppColors.primaryDark,
+              ),
               child: Column(
                 children: [
-                  _MenuSection(
-                    items: [
-                      _MenuItem(
-                        icon: Iconsax.edit,
-                        label: 'Ubah Profil',
-                        onTap: () => Get.toNamed(
-                          AppRoutes.editProfile,
-                          arguments: DummyData.renterUser,
-                        ),
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
                       ),
-                      _MenuItem(
-                        icon: Iconsax.lock,
-                        label: 'Ubah Password',
-                        onTap: () => Get.toNamed(AppRoutes.changePassword),
-                      ),
-                    ],
+                    ),
+                    child: const Icon(
+                      Icons.person_rounded,
+                      size: 40,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 12),
-                  _MenuSection(
-                    items: [
-                      _MenuItem(
-                        icon: Iconsax.document_text,
-                        label: 'Riwayat Sewa',
-                        onTap: onBookingTap,
-                      ),
-                    ],
+                  Text(
+                    user.name,
+                    style: AppTextStyles.headingMedium.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  _MenuSection(
-                    items: [
-                      _MenuItem(
-                        icon: Iconsax.logout,
-                        label: 'Logout',
-                        isDestructive: true,
-                        onTap: () => _onLogout(),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-                  Text('GarasiIn v1.0.0', style: AppTextStyles.caption),
                   const SizedBox(height: 4),
-                  Text('Marketplace Sewa Garasi', style: AppTextStyles.caption),
+                  Text(
+                    user.email,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25)),
+                    ),
+                    child: Text(
+                      'Penyewa',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
-          ),
-        ],
-      ),
-    );
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    _MenuSection(
+                      items: [
+                        _MenuItem(
+                          icon: Iconsax.edit,
+                          label: 'Ubah Profil',
+                          onTap: () => Get.toNamed(
+                            AppRoutes.editProfile,
+                            arguments: user,
+                          ),
+                        ),
+                        _MenuItem(
+                          icon: Iconsax.lock,
+                          label: 'Ubah Password',
+                          onTap: () => Get.toNamed(AppRoutes.changePassword),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _MenuSection(
+                      items: [
+                        _MenuItem(
+                          icon: Iconsax.document_text,
+                          label: 'Riwayat Sewa',
+                          onTap: onBookingTap,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _MenuSection(
+                      items: [
+                        _MenuItem(
+                          icon: Iconsax.logout,
+                          label: 'Logout',
+                          isDestructive: true,
+                          onTap: () => _onLogout(auth),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Text('GarasiIn v1.0.0', style: AppTextStyles.caption),
+                    const SizedBox(height: 4),
+                    Text('Marketplace Sewa Garasi', style: AppTextStyles.caption),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 
-  void _onLogout() {
+  void _onLogout(AuthController auth) {
     Get.dialog(
       AlertDialog(
         title: const Text('Logout'),
@@ -1352,7 +1379,10 @@ class _ProfileTab extends StatelessWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Get.offAllNamed(AppRoutes.login),
+            onPressed: () {
+              Get.back();
+              auth.logout();
+            },
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Logout'),
           ),
@@ -1360,7 +1390,6 @@ class _ProfileTab extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _MenuSection extends StatelessWidget {
@@ -1421,5 +1450,3 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
-
-

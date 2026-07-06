@@ -7,7 +7,7 @@ import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../data/models/garage_model.dart';
 
 class RentalApplyPage extends StatefulWidget {
   const RentalApplyPage({super.key});
@@ -39,8 +39,8 @@ class _RentalApplyPageState extends State<RentalApplyPage> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now,
-      firstDate: now,
+      initialDate: isStart ? now : (_startDate ?? now),
+      firstDate: isStart ? now : (_startDate ?? now),
       lastDate: DateTime(now.year + 2),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
@@ -76,7 +76,7 @@ class _RentalApplyPageState extends State<RentalApplyPage> {
   @override
   Widget build(BuildContext context) {
     final GarageModel garage =
-        Get.arguments as GarageModel? ?? DummyData.garages.first;
+        Get.arguments as GarageModel;
 
     final total = garage.pricePerMonth * (_totalMonths == 0 ? 1 : _totalMonths);
 
@@ -219,6 +219,11 @@ class _RentalApplyPageState extends State<RentalApplyPage> {
               onTap: () {
                 if (_startDate == null || _endDate == null) {
                   Get.snackbar('Perhatian', 'Pilih tanggal sewa terlebih dahulu',
+                      snackPosition: SnackPosition.BOTTOM);
+                  return;
+                }
+                if (_endDate!.isBefore(_startDate!) || _endDate!.isAtSameMomentAs(_startDate!)) {
+                  Get.snackbar('Perhatian', 'Tanggal selesai harus setelah tanggal mulai',
                       snackPosition: SnackPosition.BOTTOM);
                   return;
                 }

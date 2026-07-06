@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -5,7 +6,8 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_text_field.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../data/models/garage_model.dart';
+import '../../../presentation/owner/controllers/owner_garage_controller.dart';
 
 class OwnerGarageFormPage extends StatefulWidget {
   final bool isEdit;
@@ -20,6 +22,7 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameCtrl;
   late TextEditingController _addressCtrl;
+  late TextEditingController _cityCtrl;
   late TextEditingController _lengthCtrl;
   late TextEditingController _widthCtrl;
   late TextEditingController _priceCtrl;
@@ -31,11 +34,11 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   void initState() {
     super.initState();
     final garage =
-        widget.isEdit ? DummyData.garages.first : null;
+        widget.isEdit ? Get.arguments as GarageModel? : null;
 
     _nameCtrl = TextEditingController(text: garage?.name ?? '');
-    _addressCtrl = TextEditingController(
-        text: garage != null ? '${garage.address}, ${garage.city}' : '');
+    _addressCtrl = TextEditingController(text: garage?.address ?? '');
+    _cityCtrl = TextEditingController(text: garage?.city ?? '');
     _lengthCtrl =
         TextEditingController(text: garage?.length.toString() ?? '');
     _widthCtrl =
@@ -52,6 +55,7 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   void dispose() {
     _nameCtrl.dispose();
     _addressCtrl.dispose();
+    _cityCtrl.dispose();
     _lengthCtrl.dispose();
     _widthCtrl.dispose();
     _priceCtrl.dispose();
@@ -63,18 +67,50 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   void _onSave() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
+
+    final garageCtrl = Get.find<OwnerGarageController>();
+    bool success;
+
+    if (widget.isEdit) {
+      final garage = Get.arguments as GarageModel?;
+      success = await garageCtrl.updateGarage(
+        id: garage?.id ?? 0,
+        name: _nameCtrl.text,
+        address: _addressCtrl.text,
+        city: _cityCtrl.text,
+        length: double.tryParse(_lengthCtrl.text) ?? 0,
+        width: double.tryParse(_widthCtrl.text) ?? 0,
+        pricePerMonth: int.tryParse(_priceCtrl.text) ?? 0,
+        roadAccess: _accessCtrl.text,
+        description: _descCtrl.text,
+        imagePath: garage?.imagePath,
+      );
+    } else {
+      success = await garageCtrl.createGarage(
+        name: _nameCtrl.text,
+        address: _addressCtrl.text,
+        city: _cityCtrl.text,
+        length: double.tryParse(_lengthCtrl.text) ?? 0,
+        width: double.tryParse(_widthCtrl.text) ?? 0,
+        pricePerMonth: int.tryParse(_priceCtrl.text) ?? 0,
+        roadAccess: _accessCtrl.text,
+        description: _descCtrl.text,
+      );
+    }
+
     setState(() => _isLoading = false);
-    Get.back();
-    Get.snackbar(
-      'Berhasil',
-      widget.isEdit
-          ? 'Garasi berhasil diperbarui'
-          : 'Garasi berhasil ditambahkan',
-      backgroundColor: AppColors.success.withValues(alpha: 0.1),
-      colorText: AppColors.success,
-      snackPosition: SnackPosition.BOTTOM,
-    );
+    if (success) {
+      Get.back();
+      Get.snackbar(
+        'Berhasil',
+        widget.isEdit
+            ? 'Garasi berhasil diperbarui'
+            : 'Garasi berhasil ditambahkan',
+        backgroundColor: AppColors.success.withValues(alpha: 0.1),
+        colorText: AppColors.success,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
   }
 
   @override
@@ -114,10 +150,19 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
 
               AppTextField(
                 label: 'Alamat Lengkap',
-                hint: 'Jl. Melati No. 10, Solo',
+                hint: 'Jl. Melati No. 10',
                 controller: _addressCtrl,
                 validator: (v) =>
                     (v == null || v.isEmpty) ? 'Alamat wajib diisi' : null,
+              ),
+              const SizedBox(height: 14),
+
+              AppTextField(
+                label: 'Kota',
+                hint: 'Solo',
+                controller: _cityCtrl,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Kota wajib diisi' : null,
               ),
               const SizedBox(height: 14),
 
@@ -262,8 +307,19 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
                   ],
                 )
               : GestureDetector(
-                  onTap: () {},
-                  child: const Column(
+                  onTap: () async {
+                    await Get.find<OwnerGarageController>().pickGarageImage();
+                    setState(() {});
+                  },
+                  child: Get.find<OwnerGarageController>().selectedImagePath.value != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.file(
+                            File(Get.find<OwnerGarageController>().selectedImagePath.value!),
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.add_photo_alternate_outlined,

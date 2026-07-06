@@ -4,22 +4,20 @@ import 'package:iconsax/iconsax.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
-import '../../data/dummy/dummy_data.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Detect current "role" from route history - default to renter for demo
-    final bool isOwner = Get.previousRoute.contains('owner');
-    final user = isOwner ? DummyData.ownerUser : DummyData.renterUser;
+    final authCtrl = Get.find<AuthController>();
+    final user = authCtrl.currentUser.value!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // Header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(20, 56, 20, 28),
@@ -28,7 +26,6 @@ class ProfilePage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                // Avatar
                 Container(
                   width: 76,
                   height: 76,
@@ -71,9 +68,7 @@ class ProfilePage extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.25)),
                   ),
                   child: Text(
-                    user.role == UserRole.owner
-                        ? 'Pemilik Garasi'
-                        : 'Penyewa',
+                    user.isOwner ? 'Pemilik Garasi' : 'Penyewa',
                     style: AppTextStyles.labelSmall.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.w600,
@@ -84,7 +79,6 @@ class ProfilePage extends StatelessWidget {
             ),
           ),
 
-          // Menu
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -95,19 +89,19 @@ class ProfilePage extends StatelessWidget {
                       _MenuItem(
                         icon: Iconsax.edit,
                         label: 'Ubah Profil',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.editProfile, arguments: user),
                       ),
                       _MenuItem(
                         icon: Iconsax.lock,
                         label: 'Ubah Password',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.changePassword),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 12),
 
-                  if (user.role == UserRole.owner)
+                  if (user.isOwner)
                     _MenuSection(
                       items: [
                         _MenuItem(
@@ -130,7 +124,7 @@ class ProfilePage extends StatelessWidget {
                       ],
                     ),
 
-                  if (user.role == UserRole.renter)
+                  if (user.isRenter)
                     _MenuSection(
                       items: [
                         _MenuItem(
@@ -162,7 +156,7 @@ class ProfilePage extends StatelessWidget {
                         icon: Iconsax.logout,
                         label: 'Logout',
                         isDestructive: true,
-                        onTap: () => _onLogout(),
+                        onTap: () => _onLogout(authCtrl),
                       ),
                     ],
                   ),
@@ -224,7 +218,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  void _onLogout() {
+  void _onLogout(AuthController authCtrl) {
     Get.dialog(
       AlertDialog(
         title: const Text('Logout'),
@@ -235,7 +229,7 @@ class ProfilePage extends StatelessWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Get.offAllNamed(AppRoutes.login),
+            onPressed: () => authCtrl.logout(),
             style: TextButton.styleFrom(foregroundColor: AppColors.danger),
             child: const Text('Logout'),
           ),

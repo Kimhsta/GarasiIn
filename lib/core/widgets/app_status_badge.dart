@@ -44,6 +44,11 @@ class AppStatusBadge extends StatelessWidget {
           color = AppColors.danger;
           bg = AppColors.danger.withValues(alpha: 0.1);
           break;
+        case BookingStatus.cancelled:
+          label = 'Dibatalkan';
+          color = AppColors.textSecondary;
+          bg = AppColors.softSurface;
+          break;
       }
     } else if (garageStatus != null) {
       switch (garageStatus!) {

@@ -6,14 +6,15 @@ import '../../../app/theme/app_text_styles.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/garage_card.dart';
-import '../../../data/dummy/dummy_data.dart';
+import '../../../presentation/owner/controllers/owner_garage_controller.dart';
 
 class OwnerGarageListPage extends StatelessWidget {
   const OwnerGarageListPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final garages = DummyData.ownerGarages;
+    final garageCtrl = Get.find<OwnerGarageController>();
+    garageCtrl.loadOwnerGarages();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -24,17 +25,19 @@ class OwnerGarageListPage extends StatelessWidget {
           icon: const Icon(Iconsax.arrow_left, size: 20),
         ),
       ),
-      body: garages.isEmpty
-          ? _buildEmpty()
-          : ListView.separated(
-              padding: const EdgeInsets.all(20),
-              itemCount: garages.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => GarageCard(
-                garage: garages[i],
-                showEditButton: true,
-              ),
-            ),
+      body: Obx(() {
+        final garages = garageCtrl.garages;
+        if (garages.isEmpty) return _buildEmpty();
+        return ListView.separated(
+          padding: const EdgeInsets.all(20),
+          itemCount: garages.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (_, i) => GarageCard(
+            garage: garages[i],
+            showEditButton: true,
+          ),
+        );
+      }),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         child: AppButton(

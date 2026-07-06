@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
-import '../../app/routes/app_routes.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -35,7 +35,8 @@ class _SplashScreenState extends State<SplashScreen>
     _controller.forward();
 
     Timer(const Duration(seconds: 3), () {
-      Get.offAllNamed(AppRoutes.login);
+      final authCtrl = Get.find<AuthController>();
+      authCtrl.checkSession();
     });
   }
 
@@ -73,7 +74,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
                   child: Column(
                     children: [
-                      // Logo icon
                       Container(
                         width: 88,
                         height: 88,

@@ -1,12 +1,16 @@
-// Dummy data models & mock data for GarasiIn FE
+// Backward-compatible dummy data file.
+// Enums and old model classes are kept so existing UI can compile.
+// New backend uses data/models/ instead.
+
+import '../models/garage_model.dart' as db;
+import '../models/rental_model.dart' as db;
+import '../models/user_model.dart' as db;
 
 enum UserRole { owner, renter }
-
 enum GarageStatus { available, rented }
+enum BookingStatus { pending, accepted, rejected, cancelled }
 
-enum BookingStatus { pending, accepted, rejected }
-
-// ─── Models ────────────────────────────────────────────────────────────────
+// ─── Legacy Models (kept for UI backward compat) ────────────────────────
 
 class UserModel {
   final String id;
@@ -22,6 +26,15 @@ class UserModel {
     required this.phone,
     required this.role,
   });
+
+  /// Create from new DB model
+  factory UserModel.fromDb(db.UserModel u) => UserModel(
+    id: u.id?.toString() ?? '',
+    name: u.name,
+    email: u.email,
+    phone: u.phone,
+    role: u.role == 'owner' ? UserRole.owner : UserRole.renter,
+  );
 }
 
 class GarageModel {
@@ -38,6 +51,7 @@ class GarageModel {
   final String description;
   final List<String> facilities;
   final String imageUrl;
+  final int? dbId;
 
   const GarageModel({
     required this.id,
@@ -53,7 +67,43 @@ class GarageModel {
     required this.description,
     required this.facilities,
     required this.imageUrl,
+    this.dbId,
   });
+
+  factory GarageModel.fromDb(db.GarageModel g) => GarageModel(
+    id: g.id?.toString() ?? '',
+    ownerId: g.ownerId.toString(),
+    name: g.name,
+    address: g.address,
+    city: g.city,
+    length: g.length,
+    width: g.width,
+    pricePerMonth: g.pricePerMonth,
+    status: g.status == 'available'
+        ? GarageStatus.available
+        : GarageStatus.rented,
+    roadAccess: g.roadAccess,
+    description: g.description,
+    facilities: g.facilities,
+    imageUrl: g.imagePath ?? '',
+    dbId: g.id,
+  );
+
+  db.GarageModel toDb() => db.GarageModel(
+    id: dbId,
+    ownerId: int.tryParse(ownerId) ?? 0,
+    name: name,
+    address: address,
+    city: city,
+    length: length,
+    width: width,
+    pricePerMonth: pricePerMonth,
+    status: status == GarageStatus.available ? 'available' : 'rented',
+    roadAccess: roadAccess,
+    description: description,
+    facilities: facilities,
+    imagePath: imageUrl.isNotEmpty ? imageUrl : null,
+  );
 }
 
 class BookingModel {
@@ -68,6 +118,7 @@ class BookingModel {
   final int totalPrice;
   final BookingStatus status;
   final String? note;
+  final int? dbId;
 
   const BookingModel({
     required this.id,
@@ -81,132 +132,53 @@ class BookingModel {
     required this.totalPrice,
     required this.status,
     this.note,
+    this.dbId,
   });
+
+  factory BookingModel.fromDb(db.RentalModel r) {
+    BookingStatus bs;
+    switch (r.status) {
+      case 'accepted': bs = BookingStatus.accepted; break;
+      case 'rejected': bs = BookingStatus.rejected; break;
+      case 'cancelled': bs = BookingStatus.cancelled; break;
+      default: bs = BookingStatus.pending;
+    }
+    return BookingModel(
+      id: r.id?.toString() ?? '',
+      garageId: r.garageId.toString(),
+      garageName: r.garageName ?? '',
+      renterId: r.renterId.toString(),
+      renterName: r.renterName ?? '',
+      ownerId: r.ownerId.toString(),
+      startDate: r.startDate,
+      endDate: r.endDate,
+      totalPrice: r.totalPrice,
+      status: bs,
+      note: r.note,
+      dbId: r.id,
+    );
+  }
 }
 
-// ─── Dummy Data ─────────────────────────────────────────────────────────────
+// ─── DummyData class (now only used as fallback, seed data in DB) ───────
 
 class DummyData {
   DummyData._();
 
   static const UserModel ownerUser = UserModel(
-    id: 'u001',
-    name: 'Budi Santoso',
-    email: 'pemilik@gmail.com',
-    phone: '0812-3456-7890',
-    role: UserRole.owner,
+    id: '1', name: 'Budi Santoso', email: 'pemilik@gmail.com',
+    phone: '0812-3456-7890', role: UserRole.owner,
   );
 
   static const UserModel renterUser = UserModel(
-    id: 'u002',
-    name: 'Andi Pratama',
-    email: 'penyewa@gmail.com',
-    phone: '0856-7890-1234',
-    role: UserRole.renter,
+    id: '2', name: 'Andi Pratama', email: 'penyewa@gmail.com',
+    phone: '0856-7890-1234', role: UserRole.renter,
   );
 
-  static final List<GarageModel> garages = [
-    const GarageModel(
-      id: 'g001',
-      ownerId: 'u001',
-      name: 'Garasi Rumah Pak Budi',
-      address: 'Jl. Melati No. 10',
-      city: 'Solo',
-      length: 5.0,
-      width: 3.0,
-      pricePerMonth: 500000,
-      status: GarageStatus.available,
-      roadAccess: 'Jalan 2 jalur, mudah dilalui',
-      description:
-          'Garasi bersih dan aman, cocok untuk 1 mobil ukuran sedang. Lokasi strategis dekat pusat kota Solo. Dilengkapi penerangan dan CCTV.',
-      facilities: ['Aman', 'Dekat Jalan', 'CCTV'],
-      imageUrl: 'assets/images/garage_1.jpg',
-    ),
-    const GarageModel(
-      id: 'g002',
-      ownerId: 'u001',
-      name: 'Garasi Belakang Rumah',
-      address: 'Jl. Kenanga No. 5',
-      city: 'Solo',
-      length: 4.5,
-      width: 3.0,
-      pricePerMonth: 450000,
-      status: GarageStatus.available,
-      roadAccess: 'Jalan 1 jalur, cukup lebar',
-      description:
-          'Garasi di belakang rumah, tenang dan nyaman. Akses gerbang terpisah. Cocok untuk penyewa yang menginginkan privasi.',
-      facilities: ['Aman', 'Tenang'],
-      imageUrl: 'assets/images/garage_2.jpg',
-    ),
-    const GarageModel(
-      id: 'g003',
-      ownerId: 'u001',
-      name: 'Garasi Strategis Solo',
-      address: 'Jl. Ahmad Yani',
-      city: 'Solo',
-      length: 5.0,
-      width: 3.5,
-      pricePerMonth: 550000,
-      status: GarageStatus.rented,
-      roadAccess: 'Jalan protokol, sangat mudah diakses',
-      description:
-          'Garasi premium di lokasi paling strategis Solo. Dekat dengan pusat perbelanjaan dan kantor. Sudah disewa dan akan tersedia bulan depan.',
-      facilities: ['Aman', 'Dekat Jalan', 'CCTV', 'Penerangan'],
-      imageUrl: 'assets/images/garage_3.jpg',
-    ),
-  ];
-
-  static List<GarageModel> get ownerGarages =>
-      garages.where((g) => g.ownerId == ownerUser.id).toList();
-
-  static List<GarageModel> get availableGarages =>
-      garages.where((g) => g.status == GarageStatus.available).toList();
-
-  static final List<BookingModel> bookings = [
-    BookingModel(
-      id: 'b001',
-      garageId: 'g001',
-      garageName: 'Garasi Rumah Pak Budi',
-      renterId: 'u002',
-      renterName: 'Andi Pratama',
-      ownerId: 'u001',
-      startDate: DateTime(2024, 7, 1),
-      endDate: DateTime(2024, 7, 31),
-      totalPrice: 500000,
-      status: BookingStatus.pending,
-      note: 'Saya ingin menyewa untuk 1 bulan terlebih dahulu.',
-    ),
-    BookingModel(
-      id: 'b002',
-      garageId: 'g003',
-      garageName: 'Garasi Strategis Solo',
-      renterId: 'u002',
-      renterName: 'Siti Rahayu',
-      ownerId: 'u001',
-      startDate: DateTime(2024, 5, 1),
-      endDate: DateTime(2024, 6, 30),
-      totalPrice: 1100000,
-      status: BookingStatus.accepted,
-      note: null,
-    ),
-    BookingModel(
-      id: 'b003',
-      garageId: 'g002',
-      garageName: 'Garasi Belakang Rumah',
-      renterId: 'u002',
-      renterName: 'Andi Pratama',
-      ownerId: 'u001',
-      startDate: DateTime(2024, 4, 1),
-      endDate: DateTime(2024, 4, 30),
-      totalPrice: 450000,
-      status: BookingStatus.rejected,
-      note: 'Garasi sudah terisi.',
-    ),
-  ];
-
-  static List<BookingModel> get renterBookings =>
-      bookings.where((b) => b.renterId == renterUser.id).toList();
-
-  static List<BookingModel> get ownerBookings =>
-      bookings.where((b) => b.ownerId == ownerUser.id).toList();
+  static final List<GarageModel> garages = [];
+  static List<GarageModel> get ownerGarages => [];
+  static List<GarageModel> get availableGarages => [];
+  static final List<BookingModel> bookings = [];
+  static List<BookingModel> get renterBookings => [];
+  static List<BookingModel> get ownerBookings => [];
 }
