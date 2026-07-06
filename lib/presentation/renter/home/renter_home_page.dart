@@ -1295,24 +1295,15 @@ class _ProfileTab extends StatelessWidget {
                       _MenuItem(
                         icon: Iconsax.edit,
                         label: 'Ubah Profil',
-                        onTap: () {
-                          Get.snackbar(
-                            'Coming Soon',
-                            'Fitur ubah profil akan segera hadir',
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        },
+                        onTap: () => Get.toNamed(
+                          AppRoutes.editProfile,
+                          arguments: DummyData.renterUser,
+                        ),
                       ),
                       _MenuItem(
                         icon: Iconsax.lock,
                         label: 'Ubah Password',
-                        onTap: () {
-                          Get.snackbar(
-                            'Coming Soon',
-                            'Fitur ubah password akan segera hadir',
-                            snackPosition: SnackPosition.BOTTOM,
-                          );
-                        },
+                        onTap: () => Get.toNamed(AppRoutes.changePassword),
                       ),
                     ],
                   ),

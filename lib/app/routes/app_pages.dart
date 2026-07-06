@@ -16,6 +16,8 @@ import '../../presentation/rental/rental_contract_page.dart';
 import '../../presentation/rental/rental_signature_page.dart';
 import '../../presentation/renter/rental_history/renter_rental_history_page.dart';
 import '../../presentation/profile/profile_page.dart';
+import '../../presentation/profile/edit_profile_page.dart';
+import '../../presentation/profile/change_password_page.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -109,6 +111,16 @@ class AppPages {
     GetPage(
       name: AppRoutes.profile,
       page: () => const ProfilePage(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.editProfile,
+      page: () => const EditProfilePage(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: AppRoutes.changePassword,
+      page: () => const ChangePasswordPage(),
       transition: Transition.rightToLeft,
     ),
   ];

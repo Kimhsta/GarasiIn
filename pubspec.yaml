@@ -24,6 +24,9 @@ dependencies:
   # Signature pad for digital signature
   signature: ^5.4.0
 
+  # Image picker for profile photo
+  image_picker: ^1.0.7
+
 flutter:
   uses-material-design: true
   assets:

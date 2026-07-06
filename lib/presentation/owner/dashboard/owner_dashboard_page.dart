@@ -6,7 +6,6 @@ import '../../../app/theme/app_colors.dart';
 import '../../../app/theme/app_text_styles.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../core/widgets/garage_card.dart';
-import '../../../core/widgets/section_title.dart';
 import '../../../core/widgets/app_button.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../data/dummy/dummy_data.dart';
@@ -110,118 +109,108 @@ class _DashboardTab extends StatelessWidget {
     final available =
         garages.where((g) => g.status == GarageStatus.available).length;
 
+    final pendingBookings =
+        bookings.where((b) => b.status == BookingStatus.pending).toList();
+
     return SafeArea(
       child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(owner),
-            _buildStats(totalGarages, incomingBookings, rented, available),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SectionTitle(
-                title: 'Garasi Saya',
-                actionLabel: 'Lihat Semua',
-                onActionTap: () {},
-              ),
+            _OwnerHeroBanner(owner: owner),
+            const SizedBox(height: 24),
+            _QuickStats(
+              total: totalGarages,
+              incoming: incomingBookings,
+              rented: rented,
+              available: available,
             ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: garages.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => GarageCard(
-                  garage: garages[i],
-                  showEditButton: true,
-                ),
-              ),
-            ),
+            const SizedBox(height: 28),
+            if (pendingBookings.isNotEmpty) ...[
+              _PendingBookingsSection(bookings: pendingBookings),
+              const SizedBox(height: 28),
+            ],
+            _OwnerGarageSection(garages: garages),
             const SizedBox(height: 100),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildHeader(UserModel owner) {
+// ─── Hero Banner ──────────────────────────────────────────────────────────
+
+class _OwnerHeroBanner extends StatelessWidget {
+  final UserModel owner;
+  const _OwnerHeroBanner({required this.owner});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenW = MediaQuery.of(context).size.width;
+    final horizontalPad = screenW * 0.04;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      color: AppColors.surface,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Halo, ${owner.name.split(' ').first} 👋',
-                  style: AppTextStyles.headingMedium,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Kelola garasi dan pengajuan sewa Anda',
-                  style: AppTextStyles.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.person_rounded,
-              color: AppColors.primary,
-              size: 22,
-            ),
+      margin: EdgeInsets.fromLTRB(horizontalPad, 8, horizontalPad, 0),
+      padding: EdgeInsets.all(screenW * 0.05),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primaryDark, AppColors.primary],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStats(int total, int incoming, int rented, int available) {
-    final formatter = NumberFormat.compact(locale: 'id_ID');
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Ringkasan', style: AppTextStyles.labelLarge),
-          const SizedBox(height: 14),
           Row(
             children: [
-              _StatItem(
-                  label: 'Total\nGarasi',
-                  value: formatter.format(total),
-                  color: AppColors.primary),
-              const SizedBox(width: 1),
-              _StatItem(
-                  label: 'Booking\nMasuk',
-                  value: formatter.format(incoming),
-                  color: AppColors.warning),
-              const SizedBox(width: 1),
-              _StatItem(
-                  label: 'Sedang\nDisewa',
-                  value: formatter.format(rented),
-                  color: AppColors.danger),
-              const SizedBox(width: 1),
-              _StatItem(
-                  label: 'Tersedia',
-                  value: formatter.format(available),
-                  color: AppColors.success),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Halo, ${owner.name.split(' ').first} 👋',
+                      style: AppTextStyles.headingLarge.copyWith(
+                        color: AppColors.surface,
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Kelola garasi dan pantau penyewaanmu',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.surface.withValues(alpha: 0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.surface.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
             ],
           ),
         ],
@@ -230,37 +219,631 @@ class _DashboardTab extends StatelessWidget {
   }
 }
 
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
+// ─── Quick Stats ──────────────────────────────────────────────────────────
 
-  const _StatItem({
-    required this.label,
-    required this.value,
-    required this.color,
+class _QuickStats extends StatelessWidget {
+  final int total;
+  final int incoming;
+  final int rented;
+  final int available;
+
+  const _QuickStats({
+    required this.total,
+    required this.incoming,
+    required this.rented,
+    required this.available,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
+    final screenW = MediaQuery.of(context).size.width;
+    final cardW = screenW * 0.2;
+    final cardH = screenW * 0.24;
+
+    final stats = [
+      _StatData(
+        icon: Iconsax.buildings_2,
+        label: 'Total',
+        value: '$total',
+        color: AppColors.primary,
+      ),
+      _StatData(
+        icon: Iconsax.calendar_1,
+        label: 'Booking',
+        value: '$incoming',
+        color: AppColors.warning,
+      ),
+      _StatData(
+        icon: Iconsax.key,
+        label: 'Disewa',
+        value: '$rented',
+        color: AppColors.danger,
+      ),
+      _StatData(
+        icon: Iconsax.tick_circle,
+        label: 'Tersedia',
+        value: '$available',
+        color: AppColors.success,
+      ),
+    ];
+
+    return SizedBox(
+      height: cardH,
+      child: ListView.separated(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        scrollDirection: Axis.horizontal,
+        itemCount: stats.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => _StatCard(
+          data: stats[i],
+          width: cardW,
+        ),
+      ),
+    );
+  }
+}
+
+class _StatData {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatData({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+}
+
+class _StatCard extends StatelessWidget {
+  final _StatData data;
+  final double width;
+
+  const _StatCard({
+    required this.data,
+    required this.width,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: data.color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(data.icon, size: 18, color: data.color),
+          ),
+          const SizedBox(height: 8),
           Text(
-            value,
-            style: AppTextStyles.displayMedium.copyWith(
-              fontSize: 24,
-              color: color,
+            data.value,
+            style: AppTextStyles.headingLarge.copyWith(
+              color: data.color,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            label,
-            style: AppTextStyles.caption.copyWith(fontSize: 11),
-            textAlign: TextAlign.center,
+            data.label,
+            style: AppTextStyles.labelSmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Pending Bookings Section ─────────────────────────────────────────────
+
+class _PendingBookingsSection extends StatelessWidget {
+  final List<BookingModel> bookings;
+  const _PendingBookingsSection({required this.bookings});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenW = MediaQuery.of(context).size.width;
+    final cardW = screenW * 0.7;
+    final carouselH = screenW * 0.38;
+    final dateFormat = DateFormat('d MMM', 'id_ID');
+    final priceFormat =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Booking Terbaru', style: AppTextStyles.headingSmall),
+              GestureDetector(
+                onTap: () => Get.toNamed(AppRoutes.ownerBookingIncoming),
+                child: Text(
+                  'Lihat Semua',
+                  style: AppTextStyles.labelSmall.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          height: carouselH,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: bookings.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, i) => _BookingCarouselCard(
+              booking: bookings[i],
+              cardWidth: cardW,
+              dateFormat: dateFormat,
+              priceFormat: priceFormat,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BookingCarouselCard extends StatelessWidget {
+  final BookingModel booking;
+  final double cardWidth;
+  final DateFormat dateFormat;
+  final NumberFormat priceFormat;
+
+  const _BookingCarouselCard({
+    required this.booking,
+    required this.cardWidth,
+    required this.dateFormat,
+    required this.priceFormat,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: AppColors.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _OwnerBookingDetailSheet(booking: booking),
+        );
+      },
+      child: Container(
+        width: cardWidth,
+        padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadowLight,
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.softSurface,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.person_rounded,
+                    size: 20, color: AppColors.textSecondary),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(booking.renterName,
+                        style: AppTextStyles.labelLarge.copyWith(
+                          fontWeight: FontWeight.w600,
+                        )),
+                    Text(booking.garageName, style: AppTextStyles.caption),
+                  ],
+                ),
+              ),
+              AppStatusBadge(bookingStatus: booking.status),
+            ],
+          ),
+          const Spacer(),
+          Row(
+            children: [
+              Icon(Iconsax.calendar_1,
+                  size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+              Text(
+                '${dateFormat.format(booking.startDate)} – ${dateFormat.format(booking.endDate)}',
+                style: AppTextStyles.bodySmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            priceFormat.format(booking.totalPrice),
+            style: AppTextStyles.price.copyWith(fontSize: 16),
+          ),
+        ],
+      ),
+      ),
+    );
+  }
+}
+
+// ─── Owner Booking Detail Sheet ───────────────────────────────────────────
+
+class _OwnerBookingDetailSheet extends StatelessWidget {
+  final BookingModel booking;
+  const _OwnerBookingDetailSheet({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateFormat = DateFormat('d MMM yyyy', 'id_ID');
+    final priceFormat =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.softSurface,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.person_rounded,
+                      size: 24, color: AppColors.textSecondary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(booking.renterName,
+                          style: AppTextStyles.headingSmall),
+                      Text(booking.garageName,
+                          style: AppTextStyles.caption),
+                    ],
+                  ),
+                ),
+                AppStatusBadge(bookingStatus: booking.status),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          _DetailRow(label: 'Status', value: _getStatusText(booking.status)),
+          _DetailRow(
+              label: 'Tanggal',
+              value:
+                  '${dateFormat.format(booking.startDate)} – ${dateFormat.format(booking.endDate)}'),
+          _DetailRow(
+              label: 'Total',
+              value: priceFormat.format(booking.totalPrice)),
+          if (booking.note != null && booking.note!.isNotEmpty)
+            _DetailRow(label: 'Catatan', value: booking.note!),
+          const SizedBox(height: 24),
+
+          if (booking.status == BookingStatus.pending) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton(
+                    label: 'Tolak',
+                    isOutline: true,
+                    foregroundColor: AppColors.danger,
+                    onTap: () {
+                      Get.back();
+                      Get.snackbar('Berhasil', 'Booking ditolak',
+                          snackPosition: SnackPosition.BOTTOM);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: AppButton(
+                    label: 'Terima',
+                    backgroundColor: AppColors.success,
+                    onTap: () {
+                      Get.back();
+                      Get.snackbar('Berhasil', 'Booking diterima',
+                          snackPosition: SnackPosition.BOTTOM);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (booking.status == BookingStatus.accepted)
+            AppButton(
+              label: 'Lihat Garasi',
+              onTap: () {
+                Get.back();
+                final garage = DummyData.garages
+                    .firstWhere((g) => g.id == booking.garageId);
+                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+              },
+            ),
+          if (booking.status == BookingStatus.rejected)
+            AppButton(
+              label: 'Lihat Garasi',
+              onTap: () {
+                Get.back();
+                final garage = DummyData.garages
+                    .firstWhere((g) => g.id == booking.garageId);
+                Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _getStatusText(BookingStatus status) {
+    switch (status) {
+      case BookingStatus.pending:
+        return 'Menunggu';
+      case BookingStatus.accepted:
+        return 'Diterima';
+      case BookingStatus.rejected:
+        return 'Ditolak';
+    }
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(label, style: AppTextStyles.caption),
+          ),
+          const Text(': '),
+          Expanded(
+            child: Text(
+              value,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Owner Garage Section ─────────────────────────────────────────────────
+
+class _OwnerGarageSection extends StatelessWidget {
+  final List<GarageModel> garages;
+  const _OwnerGarageSection({required this.garages});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Garasi Saya', style: AppTextStyles.headingSmall),
+              Text(
+                '${garages.length} garasi',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        garages.isEmpty
+            ? _buildEmpty()
+            : ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: garages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 10),
+                itemBuilder: (_, i) =>
+                    _CompactOwnerGarageTile(garage: garages[i]),
+              ),
+      ],
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 40),
+      child: Center(
+        child: Column(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: const BoxDecoration(
+                color: AppColors.softSurface,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.garage_outlined,
+                  size: 36, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 16),
+            Text('Belum ada garasi', style: AppTextStyles.headingSmall),
+            const SizedBox(height: 6),
+            Text(
+              'Tambah garasi pertama Anda sekarang',
+              style: AppTextStyles.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactOwnerGarageTile extends StatelessWidget {
+  final GarageModel garage;
+  const _CompactOwnerGarageTile({required this.garage});
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter =
+        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp', decimalDigits: 0);
+
+    return GestureDetector(
+      onTap: () => Get.toNamed(AppRoutes.garageDetail, arguments: garage),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: AppColors.softSurface,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(Icons.garage_rounded,
+                  size: 28, color: AppColors.accent),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          garage.name,
+                          style: AppTextStyles.labelLarge.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AppStatusBadge(garageStatus: garage.status),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Iconsax.location,
+                          size: 12, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          garage.address,
+                          style: AppTextStyles.caption,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${garage.length}x${garage.width}m',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  formatter.format(garage.pricePerMonth),
+                  style: AppTextStyles.price.copyWith(fontSize: 14),
+                ),
+                Text(
+                  '/bulan',
+                  style: AppTextStyles.caption.copyWith(fontSize: 10),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -463,10 +1046,22 @@ class _BookingTabState extends State<_BookingTab>
       padding: const EdgeInsets.all(20),
       itemCount: list.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _BookingCard(
-        booking: list[i],
-        dateFormat: _dateFormat,
-        priceFormat: _priceFormat,
+      itemBuilder: (_, i) => GestureDetector(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            backgroundColor: AppColors.surface,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            builder: (_) => _OwnerBookingDetailSheet(booking: list[i]),
+          );
+        },
+        child: _BookingCard(
+          booking: list[i],
+          dateFormat: _dateFormat,
+          priceFormat: _priceFormat,
+        ),
       ),
     );
   }
@@ -547,7 +1142,32 @@ class _BookingCard extends StatelessWidget {
                     label: 'Tolak',
                     isOutline: true,
                     foregroundColor: AppColors.danger,
-                    onTap: () {},
+                    onTap: () {
+                      Get.dialog(
+                        AlertDialog(
+                          title: const Text('Tolak Booking'),
+                          content: const Text(
+                              'Apakah Anda yakin ingin menolak booking ini?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back(),
+                              child: const Text('Batal'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Get.back();
+                                Get.snackbar(
+                                    'Berhasil', 'Booking berhasil ditolak',
+                                    snackPosition: SnackPosition.BOTTOM);
+                              },
+                              style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.danger),
+                              child: const Text('Tolak'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -555,7 +1175,32 @@ class _BookingCard extends StatelessWidget {
                   child: AppButton(
                     label: 'Terima',
                     backgroundColor: AppColors.success,
-                    onTap: () {},
+                    onTap: () {
+                      Get.dialog(
+                        AlertDialog(
+                          title: const Text('Terima Booking'),
+                          content: const Text(
+                              'Apakah Anda yakin ingin menerima booking ini?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back(),
+                              child: const Text('Batal'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Get.back();
+                                Get.snackbar(
+                                    'Berhasil', 'Booking berhasil diterima',
+                                    snackPosition: SnackPosition.BOTTOM);
+                              },
+                              style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.success),
+                              child: const Text('Terima'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -685,12 +1330,12 @@ class _ProfileTab extends StatelessWidget {
                       _MenuItem(
                         icon: Iconsax.edit,
                         label: 'Ubah Profil',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.editProfile, arguments: DummyData.ownerUser),
                       ),
                       _MenuItem(
                         icon: Iconsax.lock,
                         label: 'Ubah Password',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.changePassword),
                       ),
                     ],
                   ),
@@ -700,27 +1345,17 @@ class _ProfileTab extends StatelessWidget {
                       _MenuItem(
                         icon: Iconsax.buildings_2,
                         label: 'Garasi Saya',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.ownerGarageList),
                       ),
                       _MenuItem(
                         icon: Iconsax.calendar_1,
                         label: 'Booking Masuk',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.ownerBookingIncoming),
                       ),
                       _MenuItem(
                         icon: Iconsax.document_text,
                         label: 'Riwayat Penyewaan',
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _MenuSection(
-                    items: [
-                      _MenuItem(
-                        icon: Iconsax.info_circle,
-                        label: 'Tentang Aplikasi',
-                        onTap: () {},
+                        onTap: () => Get.toNamed(AppRoutes.ownerRentalHistory),
                       ),
                     ],
                   ),
@@ -735,10 +1370,6 @@ class _ProfileTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
-                  Text('GarasiIn v1.0.0', style: AppTextStyles.caption),
-                  const SizedBox(height: 4),
-                  Text('Marketplace Sewa Garasi', style: AppTextStyles.caption),
                 ],
               ),
             ),

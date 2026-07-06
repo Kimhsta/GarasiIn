@@ -22,4 +22,6 @@ abstract class AppRoutes {
 
   // Shared
   static const profile = '/profile';
+  static const editProfile = '/profile/edit';
+  static const changePassword = '/profile/change-password';
 }
