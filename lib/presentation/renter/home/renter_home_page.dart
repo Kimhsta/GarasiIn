@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -407,13 +408,28 @@ class _FeaturedCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  Center(
-                    child: Icon(
-                      Icons.garage_rounded,
-                      size: 44,
-                      color: AppColors.accent.withValues(alpha: 0.6),
+                  if (garage.imagePath != null && garage.imagePath!.isNotEmpty)
+                    Image.file(
+                      File(garage.imagePath!),
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(
+                          Icons.garage_rounded,
+                          size: 44,
+                          color: AppColors.accent.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    )
+                  else
+                    Center(
+                      child: Icon(
+                        Icons.garage_rounded,
+                        size: 44,
+                        color: AppColors.accent.withValues(alpha: 0.6),
+                      ),
                     ),
-                  ),
                   Positioned(
                     top: 10,
                     right: 10,
@@ -568,8 +584,18 @@ class _CompactGarageTile extends StatelessWidget {
                 color: AppColors.softSurface,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.garage_rounded,
-                  size: 28, color: AppColors.accent),
+              clipBehavior: Clip.antiAlias,
+              child: garage.imagePath != null && garage.imagePath!.isNotEmpty
+                  ? Image.file(
+                      File(garage.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.garage_rounded,
+                          size: 28,
+                          color: AppColors.accent),
+                    )
+                  : const Icon(Icons.garage_rounded,
+                      size: 28, color: AppColors.accent),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1270,11 +1296,22 @@ class _ProfileTab extends StatelessWidget {
                         width: 2,
                       ),
                     ),
-                    child: const Icon(
-                      Icons.person_rounded,
-                      size: 40,
-                      color: Colors.white,
-                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: user.imagePath != null && user.imagePath!.isNotEmpty
+                        ? Image.file(
+                            File(user.imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person_rounded,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                   ),
                   const SizedBox(height: 12),
                   Text(
@@ -1437,16 +1474,19 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isDestructive ? AppColors.danger : AppColors.textPrimary;
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: Icon(icon,
-          size: 20,
-          color: isDestructive ? AppColors.danger : AppColors.textSecondary),
-      title: Text(label,
-          style: AppTextStyles.bodyMedium.copyWith(color: color)),
-      trailing: Icon(Icons.chevron_right_rounded,
-          size: 18, color: AppColors.border),
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: Icon(icon,
+            size: 20,
+            color: isDestructive ? AppColors.danger : AppColors.textSecondary),
+        title: Text(label,
+            style: AppTextStyles.bodyMedium.copyWith(color: color)),
+        trailing: Icon(Icons.chevron_right_rounded,
+            size: 18, color: AppColors.border),
+      ),
     );
   }
 }

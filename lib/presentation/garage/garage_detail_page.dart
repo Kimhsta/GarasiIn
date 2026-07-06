@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -61,14 +62,27 @@ class GarageDetailPage extends StatelessWidget {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Container(
-                          color: AppColors.accent.withValues(alpha: 0.25),
-                          child: const Icon(
-                            Icons.garage_rounded,
-                            size: 90,
-                            color: AppColors.accent,
-                          ),
-                        ),
+                        garage.imagePath != null && garage.imagePath!.isNotEmpty
+                            ? Image.file(
+                                File(garage.imagePath!),
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => Container(
+                                  color: AppColors.accent.withValues(alpha: 0.25),
+                                  child: const Icon(
+                                    Icons.garage_rounded,
+                                    size: 90,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              )
+                            : Container(
+                                color: AppColors.accent.withValues(alpha: 0.25),
+                                child: const Icon(
+                                  Icons.garage_rounded,
+                                  size: 90,
+                                  color: AppColors.accent,
+                                ),
+                              ),
                         Positioned(
                           bottom: 12,
                           left: 16,

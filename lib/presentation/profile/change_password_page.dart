@@ -5,6 +5,7 @@ import '../../app/theme/app_colors.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/app_button.dart';
 import '../../presentation/profile/controllers/profile_controller.dart';
+import '../../presentation/auth/controllers/auth_controller.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -44,11 +45,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       Get.back();
       Get.snackbar(
         'Berhasil',
-        'Password berhasil diubah',
+        'Password berhasil diubah. Silakan login ulang.',
         backgroundColor: AppColors.success.withValues(alpha: 0.1),
         colorText: AppColors.success,
         snackPosition: SnackPosition.BOTTOM,
+        duration: const Duration(seconds: 2),
       );
+      Future.delayed(const Duration(seconds: 1), () {
+        Get.find<AuthController>().logout();
+      });
     }
   }
 

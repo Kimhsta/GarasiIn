@@ -247,6 +247,7 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   }
 
   Widget _buildPhotoUpload() {
+    final garageCtrl = Get.find<OwnerGarageController>();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -256,19 +257,71 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
           fontSize: 13,
         )),
         const SizedBox(height: 8),
-        Container(
-          height: 160,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppColors.softSurface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: AppColors.border,
-              style: BorderStyle.solid,
+        GestureDetector(
+          onTap: () async {
+            try {
+              await garageCtrl.pickGarageImage();
+              setState(() {});
+            } catch (e) {
+              Get.snackbar('Error', 'Gagal membuka galeri: $e',
+                  snackPosition: SnackPosition.BOTTOM);
+            }
+          },
+          child: Container(
+            height: 160,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: AppColors.softSurface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppColors.border,
+                style: BorderStyle.solid,
+              ),
             ),
-          ),
-          child: widget.isEdit
-              ? Stack(
+            child: Obx(() {
+              final imgPath = garageCtrl.selectedImagePath.value;
+              if (imgPath != null) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.file(
+                        File(imgPath),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const Center(
+                          child: Icon(Icons.broken_image_outlined,
+                              size: 48, color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit, size: 13, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('Ganti Foto',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              if (widget.isEdit) {
+                return Stack(
                   fit: StackFit.expand,
                   children: [
                     ClipRRect(
@@ -305,41 +358,30 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
                       ),
                     ),
                   ],
-                )
-              : GestureDetector(
-                  onTap: () async {
-                    await Get.find<OwnerGarageController>().pickGarageImage();
-                    setState(() {});
-                  },
-                  child: Get.find<OwnerGarageController>().selectedImagePath.value != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(15),
-                          child: Image.file(
-                            File(Get.find<OwnerGarageController>().selectedImagePath.value!),
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_photo_alternate_outlined,
-                          size: 36, color: AppColors.textSecondary),
-                      SizedBox(height: 8),
-                      Text('Unggah Foto Garasi',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          )),
-                      SizedBox(height: 4),
-                      Text('Tap untuk pilih foto',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                          )),
-                    ],
-                  ),
-                ),
+                );
+              }
+              return const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_photo_alternate_outlined,
+                      size: 36, color: AppColors.textSecondary),
+                  SizedBox(height: 8),
+                  Text('Unggah Foto Garasi',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      )),
+                  SizedBox(height: 4),
+                  Text('Tap untuk pilih foto',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      )),
+                ],
+              );
+            }),
+          ),
         ),
       ],
     );

@@ -134,15 +134,20 @@ class OwnerGarageController extends GetxController {
   }
 
   Future<void> pickGarageImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 85,
-    );
-    if (pickedFile != null) {
-      selectedImagePath.value = pickedFile.path;
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        selectedImagePath.value = pickedFile.path;
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal memilih foto: $e',
+          snackPosition: SnackPosition.BOTTOM);
     }
   }
 }

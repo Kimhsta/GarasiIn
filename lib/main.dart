@@ -30,16 +30,16 @@ void main() async {
 
   // Register GetX controllers
   Get.put(AuthController(), permanent: true);
-  Get.lazyPut(() => OwnerDashboardController());
-  Get.lazyPut(() => OwnerGarageController());
-  Get.lazyPut(() => OwnerBookingController());
-  Get.lazyPut(() => RenterHomeController());
-  Get.lazyPut(() => RenterBookingController());
-  Get.lazyPut(() => ProfileController());
-  Get.lazyPut(() => GarageDetailController());
-  Get.lazyPut(() => RentalApplyController());
-  Get.lazyPut(() => RentalContractController());
-  Get.lazyPut(() => RentalSignatureController());
+  Get.lazyPut(() => OwnerDashboardController(), fenix: true);
+  Get.lazyPut(() => OwnerGarageController(), fenix: true);
+  Get.lazyPut(() => OwnerBookingController(), fenix: true);
+  Get.lazyPut(() => RenterHomeController(), fenix: true);
+  Get.lazyPut(() => RenterBookingController(), fenix: true);
+  Get.lazyPut(() => ProfileController(), fenix: true);
+  Get.lazyPut(() => GarageDetailController(), fenix: true);
+  Get.lazyPut(() => RentalApplyController(), fenix: true);
+  Get.lazyPut(() => RentalContractController(), fenix: true);
+  Get.lazyPut(() => RentalSignatureController(), fenix: true);
 
   runApp(const GarasiInApp());
 }

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -39,20 +40,32 @@ class GarageCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder
+            // Image
             Stack(
               children: [
                 Container(
                   height: isCompact ? 110 : 140,
                   width: double.infinity,
                   color: AppColors.softSurface,
-                  child: Center(
-                    child: Icon(
-                      Icons.garage_rounded,
-                      size: isCompact ? 40 : 52,
-                      color: AppColors.accent,
-                    ),
-                  ),
+                  child: garage.imagePath != null && garage.imagePath!.isNotEmpty
+                      ? Image.file(
+                          File(garage.imagePath!),
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Icon(
+                              Icons.garage_rounded,
+                              size: isCompact ? 40 : 52,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.garage_rounded,
+                            size: isCompact ? 40 : 52,
+                            color: AppColors.accent,
+                          ),
+                        ),
                 ),
                 Positioned(
                   top: 8,

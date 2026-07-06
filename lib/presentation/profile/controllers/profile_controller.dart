@@ -33,8 +33,12 @@ class ProfileController extends GetxController {
   }) async {
     isLoading.value = true;
     try {
-      final current = user.value;
+      final userId = _session.currentUserId;
+      if (userId == null) return false;
+
+      final current = user.value ?? await _userRepo.getUserById(userId);
       if (current == null) return false;
+
       final updated = current.copyWith(
         name: name, email: email, phone: phone,
         imagePath: imagePath ?? current.imagePath,

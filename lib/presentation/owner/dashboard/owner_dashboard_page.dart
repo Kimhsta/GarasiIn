@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
@@ -828,8 +829,18 @@ class _CompactOwnerGarageTile extends StatelessWidget {
                 color: AppColors.softSurface,
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: const Icon(Icons.garage_rounded,
-                  size: 28, color: AppColors.accent),
+              clipBehavior: Clip.antiAlias,
+              child: garage.imagePath != null && garage.imagePath!.isNotEmpty
+                  ? Image.file(
+                      File(garage.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(
+                          Icons.garage_rounded,
+                          size: 28,
+                          color: AppColors.accent),
+                    )
+                  : const Icon(Icons.garage_rounded,
+                      size: 28, color: AppColors.accent),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -1329,37 +1340,51 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = Get.find<AuthController>().currentUser.value;
-    if (user == null) return const SizedBox.shrink();
+    final auth = Get.find<AuthController>();
 
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-            decoration: const BoxDecoration(
-              color: AppColors.primaryDark,
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 76,
-                  height: 76,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
+    return Obx(() {
+      final user = auth.currentUser.value;
+      if (user == null) return const SizedBox.shrink();
+
+      return SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              decoration: const BoxDecoration(
+                color: AppColors.primaryDark,
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                        width: 2,
+                      ),
                     ),
+                    clipBehavior: Clip.antiAlias,
+                    child: user.imagePath != null && user.imagePath!.isNotEmpty
+                        ? Image.file(
+                            File(user.imagePath!),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.person_rounded,
+                              size: 40,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.person_rounded,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                   ),
-                  child: const Icon(
-                    Icons.person_rounded,
-                    size: 40,
-                    color: Colors.white,
-                  ),
-                ),
                 const SizedBox(height: 12),
                 Text(
                   user.name,
@@ -1453,6 +1478,7 @@ class _ProfileTab extends StatelessWidget {
         ],
       ),
     );
+    });
   }
 
   void _onLogout() {
@@ -1521,15 +1547,18 @@ class _MenuItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = isDestructive ? AppColors.danger : AppColors.textPrimary;
-    return ListTile(
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: Icon(icon,
-          size: 20,
-          color: isDestructive ? AppColors.danger : AppColors.textSecondary),
-      title: Text(label, style: AppTextStyles.bodyMedium.copyWith(color: color)),
-      trailing:
-          Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.border),
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        onTap: onTap,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: Icon(icon,
+            size: 20,
+            color: isDestructive ? AppColors.danger : AppColors.textSecondary),
+        title: Text(label, style: AppTextStyles.bodyMedium.copyWith(color: color)),
+        trailing:
+            Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.border),
+      ),
     );
   }
 }
