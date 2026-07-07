@@ -6,9 +6,11 @@ import 'package:intl/intl.dart';
 import '../../app/theme/app_colors.dart';
 import '../../app/theme/app_text_styles.dart';
 import '../../app/routes/app_routes.dart';
+import '../../core/utils/session_manager.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_status_badge.dart';
 import '../../data/models/garage_model.dart';
+import '../../data/repositories/garage_repository.dart';
 
 class GarageDetailPage extends StatelessWidget {
   const GarageDetailPage({super.key});
@@ -16,6 +18,7 @@ class GarageDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final GarageModel garage = Get.arguments as GarageModel;
+    final isOwner = SessionManager.instance.isOwner;
 
     final priceFormat = NumberFormat.currency(
       locale: 'id_ID',
@@ -206,18 +209,66 @@ class GarageDetailPage extends StatelessWidget {
               color: AppColors.surface,
               border: const Border(top: BorderSide(color: AppColors.border)),
             ),
-            child: AppButton(
-              label: 'Ajukan Sewa',
-              onTap: garage.isAvailable
-                  ? () => Get.toNamed(AppRoutes.rentalApply, arguments: garage)
-                  : null,
-              backgroundColor: garage.isAvailable
-                  ? AppColors.primary
-                  : AppColors.textSecondary,
-            ),
+            child: isOwner
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: AppButton(
+                          label: 'Edit Garasi',
+                          icon: Icons.edit_outlined,
+                          onTap: () => Get.toNamed(
+                            AppRoutes.ownerGarageEdit,
+                            arguments: garage,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AppButton(
+                          label: 'Hapus',
+                          icon: Icons.delete_outline,
+                          backgroundColor: AppColors.danger,
+                          onTap: () => _confirmDelete(context, garage),
+                        ),
+                      ),
+                    ],
+                  )
+                : AppButton(
+                    label: garage.isAvailable ? 'Ajukan Sewa' : 'Tidak Tersedia',
+                    onTap: garage.isAvailable
+                        ? () => Get.toNamed(AppRoutes.rentalApply, arguments: garage)
+                        : null,
+                    backgroundColor: garage.isAvailable
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                  ),
           ),
         ],
       ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, GarageModel garage) {
+    Get.defaultDialog(
+      title: 'Hapus Garasi',
+      middleText: 'Yakin ingin menghapus "${garage.name}"?',
+      textConfirm: 'Hapus',
+      textCancel: 'Batal',
+      confirmTextColor: Colors.white,
+      buttonColor: AppColors.danger,
+      onConfirm: () async {
+        Get.back();
+        final repo = GarageRepository();
+        await repo.deleteGarage(garage.id!);
+        Get.back();
+        Get.snackbar(
+          'Berhasil',
+          'Garasi "${garage.name}" berhasil dihapus',
+          backgroundColor: AppColors.success.withValues(alpha: 0.1),
+          colorText: AppColors.success,
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      },
     );
   }
 }
