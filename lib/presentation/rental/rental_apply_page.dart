@@ -67,10 +67,9 @@ class _RentalApplyPageState extends State<RentalApplyPage> {
 
   int get _totalMonths {
     if (_startDate == null || _endDate == null) return 0;
-    return ((_endDate!.year - _startDate!.year) * 12 +
-            (_endDate!.month - _startDate!.month))
-        .abs()
-        .clamp(1, 120);
+    final diff = _endDate!.difference(_startDate!).inDays;
+    if (diff <= 0) return 0;
+    return (diff / 30).ceil().clamp(1, 120);
   }
 
   @override

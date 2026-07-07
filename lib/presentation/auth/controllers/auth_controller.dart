@@ -74,6 +74,11 @@ class AuthController extends GetxController {
           snackPosition: SnackPosition.BOTTOM);
       return;
     }
+    if (!GetUtils.isEmail(email.trim())) {
+      Get.snackbar('Error', 'Format email tidak valid',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
     if (password.length < 6) {
       Get.snackbar('Error', 'Password minimal 6 karakter',
           snackPosition: SnackPosition.BOTTOM);

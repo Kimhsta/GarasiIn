@@ -8,6 +8,7 @@ import 'package:garasin/data/repositories/user_repository.dart';
 import 'package:garasin/data/repositories/garage_repository.dart';
 import 'package:garasin/data/repositories/rental_repository.dart';
 import 'package:garasin/data/repositories/contract_repository.dart';
+import 'package:garasin/core/utils/password_helper.dart';
 
 void main() {
   // Initialize FFI for sqflite testing
@@ -206,7 +207,6 @@ void main() {
       final result = await userRepo.changePassword(1, '123456', 'newpass');
       expect(result, 1);
 
-      // Verify login with new password
       final user = await userRepo.login('budi@test.com', 'newpass');
       expect(user, isNotNull);
     });
@@ -214,6 +214,15 @@ void main() {
     test('UPDATE - Change password with wrong old password fails', () async {
       final result = await userRepo.changePassword(1, 'wrongold', 'newpass');
       expect(result, 0);
+    });
+
+    test('VERIFY - Password is stored as hash, not plaintext', () async {
+      final user = await userRepo.getUserById(1);
+      expect(user, isNotNull);
+      expect(user!.password, isNot('newpass'));
+      expect(user.password.length, 64);
+      expect(PasswordHelper.verifyPassword('newpass', user.password), isTrue);
+      expect(PasswordHelper.verifyPassword('wrong', user.password), isFalse);
     });
   });
 

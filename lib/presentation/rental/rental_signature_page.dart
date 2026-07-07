@@ -7,7 +7,7 @@ import '../../app/theme/app_text_styles.dart';
 import '../../core/widgets/app_button.dart';
 import '../../presentation/rental/controllers/rental_signature_controller.dart';
 import '../../presentation/auth/controllers/auth_controller.dart';
-import '../../data/repositories/user_repository.dart';
+import '../../data/models/user_model.dart';
 import '../../data/models/garage_model.dart';
 
 class RentalSignaturePage extends StatefulWidget {
@@ -33,6 +33,7 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
   Widget build(BuildContext context) {
     final args = Get.arguments as Map<String, dynamic>;
     final garage = args['garage'] as GarageModel;
+    final owner = args['owner'] as UserModel?;
     final renter = authCtrl.currentUser.value;
     if (renter == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
     final renterName = renter.name;
@@ -190,7 +191,6 @@ class _RentalSignaturePageState extends State<RentalSignaturePage> {
               label: 'Kirim Pengajuan',
               isLoading: sigCtrl.isLoading.value,
               onTap: () async {
-                final owner = await UserRepository().getUserById(garage.ownerId);
                 if (owner == null) return;
                 await sigCtrl.submitRentalWithContract({
                   'garageId': garage.id!,

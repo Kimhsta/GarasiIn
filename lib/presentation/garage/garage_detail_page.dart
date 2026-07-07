@@ -11,6 +11,8 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_status_badge.dart';
 import '../../data/models/garage_model.dart';
 import '../../data/repositories/garage_repository.dart';
+import '../../presentation/owner/controllers/owner_dashboard_controller.dart';
+import '../../presentation/owner/controllers/owner_garage_controller.dart';
 
 class GarageDetailPage extends StatelessWidget {
   const GarageDetailPage({super.key});
@@ -260,6 +262,12 @@ class GarageDetailPage extends StatelessWidget {
         Get.back();
         final repo = GarageRepository();
         await repo.deleteGarage(garage.id!);
+        if (Get.isRegistered<OwnerDashboardController>()) {
+          await Get.find<OwnerDashboardController>().loadDashboard();
+        }
+        if (Get.isRegistered<OwnerGarageController>()) {
+          await Get.find<OwnerGarageController>().loadOwnerGarages();
+        }
         Get.back();
         Get.snackbar(
           'Berhasil',

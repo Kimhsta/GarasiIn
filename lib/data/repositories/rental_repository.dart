@@ -62,12 +62,64 @@ class RentalRepository {
   }
 
   Future<int> rejectRental(int rentalId) async {
-    return await _datasource.updateRentalStatus(
-        rentalId, AppConstants.rentalRejected);
+    final rental = await _datasource.getRentalById(rentalId);
+    if (rental == null) return 0;
+
+    final db = await _dbHelper.database;
+    int result = 0;
+    await db.transaction((txn) async {
+      result = await txn.update(
+        'rentals',
+        {
+          'status': AppConstants.rentalRejected,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [rentalId],
+      );
+
+      await txn.update(
+        'garages',
+        {
+          'status': AppConstants.statusAvailable,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [rental.garageId],
+      );
+    });
+
+    return result;
   }
 
   Future<int> cancelRental(int rentalId) async {
-    return await _datasource.updateRentalStatus(
-        rentalId, AppConstants.rentalCancelled);
+    final rental = await _datasource.getRentalById(rentalId);
+    if (rental == null) return 0;
+
+    final db = await _dbHelper.database;
+    int result = 0;
+    await db.transaction((txn) async {
+      result = await txn.update(
+        'rentals',
+        {
+          'status': AppConstants.rentalCancelled,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [rentalId],
+      );
+
+      await txn.update(
+        'garages',
+        {
+          'status': AppConstants.statusAvailable,
+          'updated_at': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [rental.garageId],
+      );
+    });
+
+    return result;
   }
 }

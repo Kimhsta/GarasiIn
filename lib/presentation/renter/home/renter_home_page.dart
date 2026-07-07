@@ -9,6 +9,7 @@ import '../../../app/routes/app_routes.dart';
 import '../../../core/widgets/garage_card.dart';
 import '../../../core/widgets/app_status_badge.dart';
 import '../../../core/widgets/app_button.dart';
+import '../../../data/repositories/garage_repository.dart';
 import '../../../presentation/auth/controllers/auth_controller.dart';
 import '../../../presentation/renter/controllers/renter_home_controller.dart';
 import '../../../presentation/renter/controllers/renter_booking_controller.dart';
@@ -1076,6 +1077,31 @@ class _BookingDetailSheet extends StatelessWidget {
   final RentalModel rental;
   const _BookingDetailSheet({required this.rental});
 
+  Future<void> _navigateToGarage(
+      BuildContext context, GarageModel? Function() getGarage) async {
+    Get.back();
+    final repo = GarageRepository();
+    final garage = await repo.getGarageById(rental.garageId);
+    if (garage != null) {
+      Get.toNamed(AppRoutes.garageDetail, arguments: garage);
+    } else {
+      Get.snackbar('Info', 'Garasi tidak ditemukan',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _navigateToApply(GarageModel? Function() getGarage) async {
+    Get.back();
+    final repo = GarageRepository();
+    final garage = await repo.getGarageById(rental.garageId);
+    if (garage != null) {
+      Get.toNamed(AppRoutes.rentalApply, arguments: garage);
+    } else {
+      Get.snackbar('Info', 'Garasi tidak ditemukan',
+          snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('d MMM yyyy', 'id_ID');
@@ -1085,7 +1111,6 @@ class _BookingDetailSheet extends StatelessWidget {
       decimalDigits: 0,
     );
     final bookingCtrl = Get.find<RenterBookingController>();
-    final homeCtrl = Get.find<RenterHomeController>();
 
     final badgeLabel = rental.isPending
         ? 'Menunggu'
@@ -1166,32 +1191,12 @@ class _BookingDetailSheet extends StatelessWidget {
           if (rental.isAccepted)
             AppButton(
               label: 'Lihat Garasi',
-              onTap: () {
-                Get.back();
-                final matches = homeCtrl.garages
-                    .where((g) => g.id == rental.garageId);
-                if (matches.isNotEmpty) {
-                  Get.toNamed(AppRoutes.garageDetail, arguments: matches.first);
-                } else {
-                  Get.snackbar('Info', 'Garasi tidak ditemukan',
-                      snackPosition: SnackPosition.BOTTOM);
-                }
-              },
+              onTap: () => _navigateToGarage(context, () => null),
             ),
           if (rental.isRejected)
             AppButton(
               label: 'Ajukan Lagi',
-              onTap: () {
-                Get.back();
-                final matches = homeCtrl.garages
-                    .where((g) => g.id == rental.garageId);
-                if (matches.isNotEmpty) {
-                  Get.toNamed(AppRoutes.rentalApply, arguments: matches.first);
-                } else {
-                  Get.snackbar('Info', 'Garasi tidak ditemukan',
-                      snackPosition: SnackPosition.BOTTOM);
-                }
-              },
+              onTap: () => _navigateToApply(() => null),
             ),
           if (rental.isPending) ...[
             AppButton(
@@ -1210,17 +1215,7 @@ class _BookingDetailSheet extends StatelessWidget {
             const SizedBox(height: 10),
             AppButton(
               label: 'Lihat Garasi',
-              onTap: () {
-                Get.back();
-                final matches = homeCtrl.garages
-                    .where((g) => g.id == rental.garageId);
-                if (matches.isNotEmpty) {
-                  Get.toNamed(AppRoutes.garageDetail, arguments: matches.first);
-                } else {
-                  Get.snackbar('Info', 'Garasi tidak ditemukan',
-                      snackPosition: SnackPosition.BOTTOM);
-                }
-              },
+              onTap: () => _navigateToGarage(context, () => null),
             ),
           ],
         ],

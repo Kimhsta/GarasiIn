@@ -63,6 +63,12 @@ class RenterHomeController extends GetxController {
 
   void _applyPriceFilter(List<GarageModel> source) {
     switch (selectedPriceFilter.value) {
+      case 0: // Terdekat - tampilkan semua (tidak ada data lokasi)
+        searchResults.value = source;
+        break;
+      case 1: // Populer - tampilkan semua (tidak ada data popularitas)
+        searchResults.value = source;
+        break;
       case 2: // Murah < 300rb
         searchResults.value =
             source.where((g) => g.pricePerMonth < 300000).toList();

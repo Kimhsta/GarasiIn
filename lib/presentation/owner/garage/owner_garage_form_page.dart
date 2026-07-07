@@ -28,6 +28,8 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
   late TextEditingController _priceCtrl;
   late TextEditingController _accessCtrl;
   late TextEditingController _descCtrl;
+  late TextEditingController _facilityCtrl;
+  List<String> _facilities = [];
   bool _isLoading = false;
 
   @override
@@ -49,6 +51,8 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
         TextEditingController(text: garage?.roadAccess ?? '');
     _descCtrl =
         TextEditingController(text: garage?.description ?? '');
+    _facilityCtrl = TextEditingController();
+    _facilities = List<String>.from(garage?.facilities ?? []);
   }
 
   @override
@@ -61,7 +65,28 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
     _priceCtrl.dispose();
     _accessCtrl.dispose();
     _descCtrl.dispose();
+    _facilityCtrl.dispose();
     super.dispose();
+  }
+
+  void _addFacility() {
+    final text = _facilityCtrl.text.trim();
+    if (text.isEmpty) return;
+    if (_facilities.contains(text)) {
+      Get.snackbar('Perhatian', 'Fasilitas "$text" sudah ditambahkan',
+          snackPosition: SnackPosition.BOTTOM);
+      return;
+    }
+    setState(() {
+      _facilities.add(text);
+      _facilityCtrl.clear();
+    });
+  }
+
+  void _removeFacility(int index) {
+    setState(() {
+      _facilities.removeAt(index);
+    });
   }
 
   void _onSave() async {
@@ -83,6 +108,7 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
         pricePerMonth: int.tryParse(_priceCtrl.text) ?? 0,
         roadAccess: _accessCtrl.text,
         description: _descCtrl.text,
+        facilities: _facilities,
         imagePath: garage?.imagePath,
       );
     } else {
@@ -95,6 +121,7 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
         pricePerMonth: int.tryParse(_priceCtrl.text) ?? 0,
         roadAccess: _accessCtrl.text,
         description: _descCtrl.text,
+        facilities: _facilities,
       );
     }
 
@@ -229,6 +256,79 @@ class _OwnerGarageFormPageState extends State<OwnerGarageFormPage> {
                 controller: _descCtrl,
                 maxLines: 4,
               ),
+
+              const SizedBox(height: 20),
+
+              Text('Fasilitas Garasi', style: AppTextStyles.headingSmall),
+              const SizedBox(height: 12),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: AppTextField(
+                      label: '',
+                      hint: 'Misal: CCTV, Pagar, Lampu',
+                      controller: _facilityCtrl,
+                      prefixIcon: const Icon(Iconsax.tick_circle,
+                          size: 18, color: AppColors.textSecondary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _addFacility,
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.add,
+                          color: Colors.white, size: 22),
+                    ),
+                  ),
+                ],
+              ),
+
+              if (_facilities.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: List.generate(_facilities.length, (index) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color:
+                                AppColors.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_outline,
+                              size: 13, color: AppColors.primary),
+                          const SizedBox(width: 5),
+                          Text(_facilities[index],
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w600,
+                              )),
+                          const SizedBox(width: 6),
+                          GestureDetector(
+                            onTap: () => _removeFacility(index),
+                            child: const Icon(Icons.close,
+                                size: 14, color: AppColors.danger),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ),
+              ],
 
               const SizedBox(height: 28),
 

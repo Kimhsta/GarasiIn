@@ -1,5 +1,6 @@
 import '../../models/user_model.dart';
 import 'database_helper.dart';
+import '../../../core/utils/password_helper.dart';
 
 /// Local datasource for user CRUD operations
 class UserLocalDatasource {
@@ -7,7 +8,10 @@ class UserLocalDatasource {
 
   Future<int> insertUser(UserModel user) async {
     final db = await _dbHelper.database;
-    return await db.insert('users', user.toMap());
+    final hashedUser = user.copyWith(
+      password: PasswordHelper.hashPassword(user.password),
+    );
+    return await db.insert('users', hashedUser.toMap());
   }
 
   Future<UserModel?> getUserByEmailAndPassword(
@@ -15,12 +19,14 @@ class UserLocalDatasource {
     final db = await _dbHelper.database;
     final result = await db.query(
       'users',
-      where: 'email = ? AND password = ?',
-      whereArgs: [email, password],
+      where: 'email = ?',
+      whereArgs: [email],
       limit: 1,
     );
     if (result.isEmpty) return null;
-    return UserModel.fromMap(result.first);
+    final user = UserModel.fromMap(result.first);
+    if (!PasswordHelper.verifyPassword(password, user.password)) return null;
+    return user;
   }
 
   Future<UserModel?> getUserById(int id) async {
@@ -66,19 +72,23 @@ class UserLocalDatasource {
   Future<int> changePassword(
       int userId, String oldPassword, String newPassword) async {
     final db = await _dbHelper.database;
-    // Verify old password first
     final user = await db.query(
       'users',
-      where: 'id = ? AND password = ?',
-      whereArgs: [userId, oldPassword],
+      where: 'id = ?',
+      whereArgs: [userId],
       limit: 1,
     );
     if (user.isEmpty) return 0;
 
+    final existingUser = UserModel.fromMap(user.first);
+    if (!PasswordHelper.verifyPassword(oldPassword, existingUser.password)) {
+      return 0;
+    }
+
     return await db.update(
       'users',
       {
-        'password': newPassword,
+        'password': PasswordHelper.hashPassword(newPassword),
         'updated_at': DateTime.now().toIso8601String(),
       },
       where: 'id = ?',

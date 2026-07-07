@@ -36,7 +36,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (!_formKey.currentState!.validate()) return;
     final authCtrl = Get.find<AuthController>();
     authCtrl.register(
-      name: _nameCtrl.text,
+      name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
       password: _passCtrl.text,

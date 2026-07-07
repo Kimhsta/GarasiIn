@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../../../core/utils/app_constants.dart';
+import '../../../core/utils/password_helper.dart';
 
 /// SQLite database helper for GarasiIn
 class DatabaseHelper {
@@ -134,7 +135,7 @@ class DatabaseHelper {
       'name': 'Budi Santoso',
       'email': 'pemilik@gmail.com',
       'phone': '0812-3456-7890',
-      'password': '123456',
+      'password': PasswordHelper.hashPassword('123456'),
       'role': 'owner',
     });
 
@@ -143,7 +144,7 @@ class DatabaseHelper {
       'name': 'Andi Pratama',
       'email': 'penyewa@gmail.com',
       'phone': '0856-7890-1234',
-      'password': '123456',
+      'password': PasswordHelper.hashPassword('123456'),
       'role': 'renter',
     });
 

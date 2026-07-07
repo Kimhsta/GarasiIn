@@ -8,6 +8,7 @@ import '../../app/routes/app_routes.dart';
 import '../../core/widgets/app_button.dart';
 import '../../data/models/garage_model.dart';
 import '../../data/models/user_model.dart';
+import '../../data/repositories/contract_repository.dart';
 import '../../presentation/auth/controllers/auth_controller.dart';
 import '../../data/repositories/user_repository.dart';
 
@@ -61,8 +62,7 @@ class _RentalContractPageState extends State<RentalContractPage> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final contractNumber =
-        'KTR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    final contractNumber = ContractRepository().generateContractNumber();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -222,6 +222,7 @@ class _RentalContractPageState extends State<RentalContractPage> {
                   'total': total,
                   'note': note.isEmpty ? null : note,
                   'contractNumber': contractNumber,
+                  'owner': _owner,
                 });
               },
             ),

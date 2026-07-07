@@ -19,6 +19,7 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
   final _garageRepo = GarageRepository();
   List<GarageModel> _allGarages = [];
   List<GarageModel> _results = [];
+  int _selectedFilter = -1;
 
   @override
   void initState() {
@@ -28,9 +29,7 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
 
   Future<void> _loadGarages() async {
     _allGarages = await _garageRepo.getAvailableGarages();
-    setState(() {
-      _results = _allGarages;
-    });
+    _applyFilter();
   }
 
   @override
@@ -40,16 +39,47 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
   }
 
   void _onSearch(String query) {
+    _applyFilter(query: query);
+  }
+
+  void _onFilterSelect(int filterIndex) {
     setState(() {
-      if (query.isEmpty) {
-        _results = _allGarages;
-      } else {
-        _results = _allGarages
+      _selectedFilter = filterIndex;
+    });
+    _applyFilter(query: _searchCtrl.text);
+  }
+
+  void _applyFilter({String query = ''}) {
+    setState(() {
+      List<GarageModel> source = _allGarages;
+
+      if (query.isNotEmpty) {
+        final kw = query.toLowerCase();
+        source = source
             .where((g) =>
-                g.name.toLowerCase().contains(query.toLowerCase()) ||
-                g.address.toLowerCase().contains(query.toLowerCase()) ||
-                g.city.toLowerCase().contains(query.toLowerCase()))
+                g.name.toLowerCase().contains(kw) ||
+                g.address.toLowerCase().contains(kw) ||
+                g.city.toLowerCase().contains(kw))
             .toList();
+      }
+
+      switch (_selectedFilter) {
+        case 0: // < 300rb
+          _results =
+              source.where((g) => g.pricePerMonth < 300000).toList();
+          break;
+        case 1: // 300-500rb
+          _results = source
+              .where((g) =>
+                  g.pricePerMonth >= 300000 && g.pricePerMonth <= 500000)
+              .toList();
+          break;
+        case 2: // > 500rb
+          _results =
+              source.where((g) => g.pricePerMonth > 500000).toList();
+          break;
+        default: // all
+          _results = source;
       }
     });
   }
@@ -67,7 +97,6 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Container(
             color: AppColors.surface,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -94,7 +123,6 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
             ),
           ),
 
-          // Price Filter
           Container(
             color: AppColors.surface,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -102,24 +130,36 @@ class _RenterSearchPageState extends State<RenterSearchPage> {
               scrollDirection: Axis.horizontal,
               child: Row(
                 children: [
-                  _FilterPill(label: 'Semua Harga', isSelected: true, onTap: () {}),
-                  const SizedBox(width: 8),
-                  _FilterPill(label: '< Rp300rb', isSelected: false, onTap: () {}),
+                  _FilterPill(
+                    label: 'Semua Harga',
+                    isSelected: _selectedFilter == -1,
+                    onTap: () => _onFilterSelect(-1),
+                  ),
                   const SizedBox(width: 8),
                   _FilterPill(
-                      label: 'Rp300–500rb', isSelected: false, onTap: () {}),
+                    label: '< Rp300rb',
+                    isSelected: _selectedFilter == 0,
+                    onTap: () => _onFilterSelect(0),
+                  ),
                   const SizedBox(width: 8),
                   _FilterPill(
-                      label: 'Rp500rb–1jt', isSelected: false, onTap: () {}),
+                    label: 'Rp300–500rb',
+                    isSelected: _selectedFilter == 1,
+                    onTap: () => _onFilterSelect(1),
+                  ),
+                  const SizedBox(width: 8),
+                  _FilterPill(
+                    label: '> Rp500rb',
+                    isSelected: _selectedFilter == 2,
+                    onTap: () => _onFilterSelect(2),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Divider
           const Divider(height: 1),
 
-          // Results
           Expanded(
             child: _results.isEmpty
                 ? _buildEmpty()

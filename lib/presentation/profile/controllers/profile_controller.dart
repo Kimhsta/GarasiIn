@@ -39,6 +39,15 @@ class ProfileController extends GetxController {
       final current = user.value ?? await _userRepo.getUserById(userId);
       if (current == null) return false;
 
+      if (email.trim() != current.email) {
+        final existing = await _userRepo.getUserByEmail(email.trim());
+        if (existing != null) {
+          Get.snackbar('Gagal', 'Email sudah digunakan oleh akun lain',
+              snackPosition: SnackPosition.BOTTOM);
+          return false;
+        }
+      }
+
       final updated = current.copyWith(
         name: name, email: email, phone: phone,
         imagePath: imagePath ?? current.imagePath,
